@@ -1,0 +1,353 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../data/models/scheduled_task.dart';
+import '../../../../core/theme/app_colors.dart';
+
+/// Modal for recording task completion with productivity feedback
+class TaskCompletionModal extends ConsumerStatefulWidget {
+  final ScheduledTask task;
+  final Function(
+    DateTime actualStartTime,
+    int actualDurationMinutes,
+    double productivityRating,
+    String? notes,
+  )
+  onComplete;
+
+  const TaskCompletionModal({
+    super.key,
+    required this.task,
+    required this.onComplete,
+  });
+
+  @override
+  ConsumerState<TaskCompletionModal> createState() =>
+      _TaskCompletionModalState();
+}
+
+class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
+  late DateTime _actualStartTime;
+  late int _actualDurationMinutes;
+  double _productivityRating = 3.0;
+  final _notesController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Default to scheduled time and duration
+    _actualStartTime = widget.task.scheduledStartTime;
+    _actualDurationMinutes = widget.task.duration;
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Color(
+                      int.parse(
+                        widget.task.colorHex?.replaceFirst('#', '0xFF') ??
+                            '0xFFC6F432',
+                      ),
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.task.title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Productivity Rating
+            Text(
+              'How productive were you?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildProductivityRating(),
+            const SizedBox(height: 24),
+
+            // Actual Start Time
+            Text(
+              'When did you actually start?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildTimePicker(),
+            const SizedBox(height: 24),
+
+            // Actual Duration
+            Text(
+              'How long did it take?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildDurationPicker(),
+            const SizedBox(height: 24),
+
+            // Notes (optional)
+            Text(
+              'Notes (optional)',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notesController,
+              maxLines: 3,
+              style: const TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Any thoughts about this session?',
+                hintStyle: TextStyle(color: AppColors.textSecondary),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Submit Button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _handleSubmit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Complete Task',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductivityRating() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(5, (index) {
+              final rating = index + 1;
+              final isSelected = _productivityRating.round() == rating;
+
+              return GestureDetector(
+                onTap: () =>
+                    setState(() => _productivityRating = rating.toDouble()),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    isSelected ? Icons.star : Icons.star_border,
+                    size: 40,
+                    color: isSelected
+                        ? AppColors.accent
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _getRatingLabel(_productivityRating.round()),
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getRatingLabel(int rating) {
+    switch (rating) {
+      case 1:
+        return 'Not productive at all';
+      case 2:
+        return 'Somewhat productive';
+      case 3:
+        return 'Moderately productive';
+      case 4:
+        return 'Very productive';
+      case 5:
+        return 'Extremely productive!';
+      default:
+        return '';
+    }
+  }
+
+  Widget _buildTimePicker() {
+    return InkWell(
+      onTap: _pickStartTime,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.access_time, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Text(
+              '${_actualStartTime.hour.toString().padLeft(2, '0')}:${_actualStartTime.minute.toString().padLeft(2, '0')}',
+              style: const TextStyle(
+                fontSize: 16,
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.edit, size: 20, color: AppColors.textSecondary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDurationPicker() {
+    final hours = _actualDurationMinutes ~/ 60;
+    final minutes = _actualDurationMinutes % 60;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.timer, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Text(
+            hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m',
+            style: const TextStyle(
+              fontSize: 16,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline),
+            color: AppColors.textSecondary,
+            onPressed: () {
+              if (_actualDurationMinutes > 5) {
+                setState(() => _actualDurationMinutes -= 5);
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            color: AppColors.primary,
+            onPressed: () {
+              setState(() => _actualDurationMinutes += 5);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickStartTime() async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_actualStartTime),
+    );
+
+    if (time != null) {
+      setState(() {
+        _actualStartTime = DateTime(
+          _actualStartTime.year,
+          _actualStartTime.month,
+          _actualStartTime.day,
+          time.hour,
+          time.minute,
+        );
+      });
+    }
+  }
+
+  void _handleSubmit() {
+    widget.onComplete(
+      _actualStartTime,
+      _actualDurationMinutes,
+      _productivityRating,
+      _notesController.text.isEmpty ? null : _notesController.text,
+    );
+    Navigator.pop(context);
+  }
+}
