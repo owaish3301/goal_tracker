@@ -33,6 +33,10 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Isar test databases
+test_*.isar
+test_*.isar-lck
+
 # Symbolication related
 app.*.symbols
 

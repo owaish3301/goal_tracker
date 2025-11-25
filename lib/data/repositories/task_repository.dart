@@ -11,6 +11,10 @@ class TaskRepository {
   // Create
   Future<int> createTask(Task task, int goalId, {int? milestoneId}) async {
     return await isar.writeTxn(() async {
+      // First, put the task into the database
+      final taskId = await isar.tasks.put(task);
+
+      // Now we can save the links (object must be in DB first)
       final goal = await isar.goals.get(goalId);
       if (goal != null) {
         task.goal.value = goal;
@@ -25,7 +29,7 @@ class TaskRepository {
         }
       }
 
-      return await isar.tasks.put(task);
+      return taskId;
     });
   }
 

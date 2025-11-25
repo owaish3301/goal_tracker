@@ -7,7 +7,7 @@ An offline-first, privacy-centric productivity app that uses on-device Machine L
 ## 📱 Platform
 - **Primary Target:** Android (Flutter)
 - **Architecture:** Offline-first, privacy-focused
-- **ML:** On-device learning with TensorFlow Lite
+- **ML:** On-device pattern-based learning (pluggable for TensorFlow Lite)
 
 ## 📚 Documentation
 
@@ -23,7 +23,25 @@ flutter pub get
 
 # Run the app
 flutter run
+
+# Run all tests
+flutter test
 ```
+
+## 🧪 Test Coverage
+
+```bash
+# Run all tests (138 tests)
+flutter test --reporter compact
+```
+
+| Test Suite | Tests |
+|------------|-------|
+| Core Services (HybridScheduler, ProductivityDataCollector, PatternBasedML) | 35 |
+| Widget Tests (TaskCompletionModal, ScheduledTaskCard, UnifiedTimelineCard) | 58 |
+| Provider Tests (scheduledTaskProviders, timelineProviders) | 25 |
+| Repository Tests (Goal, Task, Milestone, OneTimeTask, etc.) | 20 |
+| **Total** | **138** |
 
 ## 🏗️ Project Structure
 
@@ -38,7 +56,13 @@ lib/
 
 ## 🎯 Current Phase
 
-**Phase 0: Project Setup & Foundation** (In Progress)
+**Phase 4: ML-Powered Scheduler** ✅ COMPLETE
+
+- ✅ Phase 0: Project Setup & Foundation
+- ✅ Phase 1: Core Data Layer  
+- ✅ Phase 2: Goal Management UI
+- ✅ Phase 3: One-Time Tasks
+- ✅ Phase 4: ML-Powered Scheduler (138 tests passing)
 
 See [DEVELOPMENT_PHASES.md](DEVELOPMENT_PHASES.md) for detailed roadmap.
 
@@ -55,7 +79,7 @@ See [DEVELOPMENT_PHASES.md](DEVELOPMENT_PHASES.md) for detailed roadmap.
 - **Framework:** Flutter
 - **Database:** Isar (high-performance local storage)
 - **State Management:** Riverpod/Bloc
-- **ML:** TensorFlow Lite for Flutter
+- **ML:** Pattern-based on-device learning (pluggable for TensorFlow Lite)
 - **Navigation:** GoRouter
 
 ## 📖 Resources

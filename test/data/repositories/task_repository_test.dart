@@ -4,6 +4,7 @@ import 'package:goal_tracker/data/models/goal.dart';
 import 'package:goal_tracker/data/models/milestone.dart';
 import 'package:goal_tracker/data/models/task.dart';
 import 'package:goal_tracker/data/models/one_time_task.dart';
+import 'package:goal_tracker/data/models/scheduled_task.dart';
 import 'package:goal_tracker/data/models/productivity_data.dart';
 import 'package:goal_tracker/data/models/app_settings.dart';
 import 'package:goal_tracker/data/repositories/task_repository.dart';
@@ -12,6 +13,10 @@ void main() {
   late Isar isar;
   late TaskRepository taskRepository;
 
+  setUpAll(() async {
+    await Isar.initializeIsarCore(download: true);
+  });
+
   setUp(() async {
     isar = await Isar.open(
       [
@@ -19,11 +24,12 @@ void main() {
         MilestoneSchema,
         TaskSchema,
         OneTimeTaskSchema,
+        ScheduledTaskSchema,
         ProductivityDataSchema,
         AppSettingsSchema,
       ],
       directory: '',
-      name: 'test_task_tracker',
+      name: 'test_task_${DateTime.now().millisecondsSinceEpoch}',
     );
 
     taskRepository = TaskRepository(isar);
