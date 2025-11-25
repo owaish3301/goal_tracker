@@ -163,21 +163,236 @@ This document outlines the phased development approach for the Goal Tracker app,
 - ✅ Auto-regeneration on goal changes
 - ✅ Multi-day schedule consistency
 - ✅ Comprehensive test coverage (138 tests total, all passing)
+
 ---
 
-## Phase 8: Polish & Optimization
+## Phase 5: User Profile & Goal Categories (Prerequisites for Scheduler v2)
+**Duration:** 3-4 days  
+**Goal:** Build foundation for personalized scheduling - User profiling and goal categorization
+**Status:** NOT STARTED
+
+### Part A: User Profile Data Layer
+- [ ] Create `UserProfile` Isar model with fields:
+  - `chronoType` (earlyBird, normal, nightOwl, flexible)
+  - `wakeUpHour`, `sleepHour`
+  - `workStartHour`, `workEndHour` (optional)
+  - `busyDays` list
+  - `preferredSessionLength` (short, medium, long)
+  - `prefersRoutine` boolean
+  - `onboardingCompleted` flag
+- [ ] Create `UserProfileRepository` with CRUD operations
+- [ ] Create `userProfileProvider` for state management
+- [ ] Write unit tests for UserProfile repository
+- [ ] Add UserProfileSchema to DatabaseService initialization
+
+### Part B: Goal Categories
+- [ ] Add `GoalCategory` enum to goal model:
+  - exercise, learning, creative, work, wellness, social, chores, other
+- [ ] Update `Goal` model with `category` field
+- [ ] Create research-backed optimal hours mapping per category
+- [ ] Update goal form UI to include category selector
+- [ ] Migrate existing goals to 'other' category
+- [ ] Write tests for category functionality
+
+### Part C: App Settings Enhancement
+- [ ] Extend `AppSettings` model if needed for global preferences
+- [ ] Add settings for notification preferences (future use)
+- [ ] Create settings repository and provider
+
+### Deliverables
+- UserProfile model and repository
+- Goal categories with optimal time mappings
+- Foundation for personalized scheduling
+
+---
+
+## Phase 6: Onboarding Flow
+**Duration:** 3-4 days  
+**Goal:** Create onboarding experience that captures user profile for Day 1 personalization
+**Status:** NOT STARTED
+
+### Part A: Onboarding UI Screens
+- [ ] Create onboarding feature folder structure
+- [ ] Screen 1: Welcome screen with app introduction
+- [ ] Screen 2: Chronotype selection (4 options with illustrations)
+- [ ] Screen 3: Sleep schedule picker (wake up / sleep time)
+- [ ] Screen 4: Session length preference (short/medium/long)
+- [ ] Screen 5: Work schedule (optional, with toggle)
+- [ ] Screen 6: Completion celebration screen
+- [ ] Add progress indicator across screens
+- [ ] Add skip option (uses defaults)
+
+### Part B: Onboarding Logic
+- [ ] Create `OnboardingService` to manage flow state
+- [ ] Save user profile on completion
+- [ ] Set `onboardingCompleted = true` flag
+- [ ] Handle skip scenario with sensible defaults
+- [ ] Create `onboardingProvider` for state management
+
+### Part C: Navigation Integration
+- [ ] Update app router to check onboarding status on launch
+- [ ] Redirect new users to onboarding flow
+- [ ] Redirect returning users to timeline
+- [ ] Add "Redo onboarding" option in settings (future)
+
+### Part D: Testing
+- [ ] Write widget tests for each onboarding screen
+- [ ] Write integration test for complete onboarding flow
+- [ ] Test skip functionality
+- [ ] Test navigation redirects
+
+### Deliverables
+- Complete 6-screen onboarding flow
+- User profile saved on completion
+- Automatic routing based on onboarding status
+
+---
+
+## Phase 7: Habit Tracking Foundation
+**Duration:** 2-3 days  
+**Goal:** Build streak and consistency tracking infrastructure
+**Status:** NOT STARTED
+
+### Part A: Habit Metrics Data Layer
+- [ ] Create `HabitMetrics` Isar model with fields:
+  - `goalId` (linked to Goal)
+  - `currentStreak`, `longestStreak`
+  - `lastCompletedDate`
+  - `consistencyScore` (% of scheduled days completed)
+  - `timeConsistency` (% completed at same hour)
+  - `stickyHour`, `stickyDayOfWeek`
+  - `totalCompletions`, `totalScheduled`
+- [ ] Create `HabitMetricsRepository` with CRUD and calculation methods
+- [ ] Add HabitMetricsSchema to DatabaseService
+
+### Part B: Habit Formation Service
+- [ ] Create `HabitFormationService` with methods:
+  - `updateMetricsOnCompletion(goalId, completedAt)`
+  - `updateMetricsOnSkip(goalId)`
+  - `calculateConsistencyScore(goalId)`
+  - `findStickyTime(goalId)` - most successful hour
+  - `getStreakStatus(goalId)` - current vs longest
+- [ ] Integrate with ProductivityDataCollector (update on task completion)
+- [ ] Calculate metrics from historical ProductivityData on first run
+
+### Part C: Streak UI Components
+- [ ] Create streak badge widget (🔥 14 days)
+- [ ] Create consistency indicator widget
+- [ ] Add streak display to goal card
+- [ ] Add streak display to timeline task card
+- [ ] Create "streak at risk" warning component
+
+### Part D: Testing
+- [ ] Write unit tests for HabitMetrics calculations
+- [ ] Write tests for streak increment/reset logic
+- [ ] Write widget tests for streak components
+
+### Deliverables
+- HabitMetrics model tracking streaks and consistency
+- HabitFormationService for calculations
+- Streak UI components ready for integration
+
+---
+
+## Phase 8: Enhanced ProductivityData & ML Features
+**Duration:** 2-3 days  
+**Goal:** Add contextual features to ProductivityData for smarter ML predictions
+**Status:** NOT STARTED
+
+### Part A: ProductivityData Model Enhancement
+- [ ] Add new fields to `ProductivityData`:
+  - `taskOrderInDay` (1st, 2nd, 3rd task)
+  - `minutesSinceWakeUp` (relative to user's wake time)
+  - `previousTaskRating` (rating of task before this)
+  - `currentStreak` (goal's streak at time of completion)
+  - `completionRateLast7Days`
+  - `totalTasksScheduledToday`
+  - `tasksCompletedBeforeThis`
+- [ ] Update `ProductivityDataCollector` to capture new fields
+- [ ] Migrate existing data (set defaults for new fields)
+
+### Part B: ML Service Enhancement
+- [ ] Update `PatternBasedMLService` to use new features
+- [ ] Add weighted scoring for contextual factors:
+  - Task order impact
+  - Recent momentum (7-day completion rate)
+  - Streak motivation factor
+- [ ] Create `getContextScore()` method for real-time adjustments
+
+### Part C: Testing
+- [ ] Update existing ML service tests for new features
+- [ ] Write tests for context-aware predictions
+- [ ] Validate prediction accuracy with enhanced features
+
+### Deliverables
+- Enhanced ProductivityData with context features
+- Smarter ML predictions using contextual data
+
+---
+
+## Phase 9: Scheduler v2 - Three-Tier Architecture
+**Duration:** 4-5 days  
+**Goal:** Implement the complete three-tier scheduling system with habit overlay
+**Status:** NOT STARTED
+**Dependencies:** Phase 5, 6, 7, 8
+
+### Part A: Profile-Based Scheduler (Tier 2)
+- [ ] Create `ProfileBasedScheduler` service
+- [ ] Implement chrono-type time preferences:
+  - Early Bird: High priority 6-10 AM
+  - Normal: High priority 9 AM-12 PM
+  - Night Owl: High priority 8 PM-12 AM
+- [ ] Implement goal category optimal hours
+- [ ] Combine chrono-type + category for smart defaults
+- [ ] Handle work hour avoidance (if set)
+
+### Part B: Dynamic Time Window Service
+- [ ] Create `DynamicTimeWindowService`
+- [ ] Use user profile wake/sleep hours as base
+- [ ] Learn from successful completions (4+ rating)
+- [ ] Adjust earliest/latest successful hours per day
+- [ ] Handle weekday vs weekend differences
+- [ ] Update window on each task completion
+
+### Part C: HybridScheduler v2 Integration
+- [ ] Update `HybridScheduler` with three-tier logic:
+  1. ML-based (if ≥10 data, ≥60% confidence)
+  2. Profile-based (if onboarding completed)
+  3. Rule-based (fallback)
+- [ ] Add habit formation overlay:
+  - Prefer sticky times for goals with high consistency
+  - Protect streaks (14+ days)
+  - Apply 21-day habit lock
+- [ ] Use dynamic time windows instead of hardcoded 6AM-11PM
+
+### Part D: Testing & Validation
+- [ ] Write unit tests for ProfileBasedScheduler
+- [ ] Write unit tests for DynamicTimeWindowService
+- [ ] Update HybridScheduler tests for three-tier logic
+- [ ] Write integration tests for complete scheduling flow
+- [ ] Validate scheduling quality with test scenarios
+
+### Deliverables
+- Three-tier scheduling system (ML → Profile → Rules)
+- Dynamic time windows based on user behavior
+- Habit formation overlay for consistency optimization
+- Complete test coverage for scheduler v2
+
+---
+
+## Phase 10: Polish & Optimization
 **Duration:** 3-4 days  
 **Goal:** Refine UI/UX and optimize performance
 
 ### Tasks
-- [ ] Implement dark mode with neon accents
+- [ ] Finalize dark mode with neon accents
 - [ ] Add micro-animations and transitions
 - [ ] Optimize database queries
 - [ ] Add loading states and skeleton screens
 - [ ] Implement error boundaries and crash reporting
-- [ ] Add onboarding flow for new users
 - [ ] Create app icon and splash screen
 - [ ] Performance profiling and optimization
+- [ ] Add "Redo Onboarding" option in settings
 
 ### Deliverables
 - Polished, premium-feeling UI
@@ -186,23 +401,26 @@ This document outlines the phased development approach for the Goal Tracker app,
 
 ---
 
-## Phase 9: Testing & Bug Fixes
+## Phase 11: Testing & Bug Fixes
 **Duration:** 3-5 days  
 **Goal:** Comprehensive testing and quality assurance
 
 ### Tasks
-- [ ] Write integration tests
+- [ ] Write integration tests for full app flow
 - [ ] Run data layer unit tests as integration tests on device/emulator
   - Goal repository tests (10 tests)
   - Task repository tests (6 tests)
   - Milestone repository tests (5 tests)
-  - Note: These tests exist in `test/data/repositories/` but require Isar native libraries to run
+  - UserProfile repository tests
+  - HabitMetrics repository tests
 - [ ] Perform manual testing on various Android devices
 - [ ] Test edge cases:
   - Empty states
   - Scheduling conflicts
   - Data persistence
   - ML model edge cases
+  - Onboarding skip scenarios
+  - Streak edge cases (timezone, missed days)
 - [ ] Fix identified bugs
 - [ ] Optimize battery usage
 - [ ] Test offline functionality thoroughly
@@ -214,7 +432,7 @@ This document outlines the phased development approach for the Goal Tracker app,
 
 ---
 
-## Phase 10: Release Preparation
+## Phase 12: Release Preparation
 **Duration:** 2-3 days  
 **Goal:** Prepare for initial release
 
@@ -237,45 +455,87 @@ This document outlines the phased development approach for the Goal Tracker app,
 
 ## Future Phases (V2+)
 
-### Phase 11: Statistics Dashboard
+### Phase 13: Statistics Dashboard
 - Productivity analytics
 - Time-of-day heatmaps
-- Streak tracking
+- Streak tracking visualization
 - Goal completion rates
+- Weekly/monthly reports
 
-### Phase 12: Advanced Features
+### Phase 14: Advanced Features
 - Habit stacking detection
-- Smart notifications
-- Widget support
+- Smart notifications (streak reminders, optimal time suggestions)
+- Widget support (today's schedule, streak counter)
 - Backup/restore functionality
 - iOS support
+- TensorFlow Lite integration for advanced ML
 
 ---
 
 ## Development Timeline Summary
 
-| Phase | Duration | Cumulative |
-|-------|----------|------------|
-| Phase 0: Setup | 1-2 days | 2 days |
-| Phase 1: Data Layer | 3-4 days | 6 days |
-| Phase 2: Goal Management | 4-5 days | 11 days |
-| Phase 3: One-Time Tasks | 2-3 days | 14 days |
-| Phase 4: Scheduler Logic | 4-5 days | 19 days |
-| Phase 5: Timeline UI | 5-6 days | 25 days |
-| Phase 6: Feedback Loop | 3-4 days | 29 days |
-| Phase 7: ML Integration | 6-8 days | 37 days |
-| Phase 8: Polish | 3-4 days | 41 days |
-| Phase 9: Testing | 3-5 days | 46 days |
-| Phase 10: Release | 2-3 days | **49 days** |
+| Phase | Description | Duration | Cumulative |
+|-------|-------------|----------|------------|
+| Phase 0 | Setup | 1-2 days | 2 days |
+| Phase 1 | Data Layer | 3-4 days | 6 days |
+| Phase 2 | Goal Management | 4-5 days | 11 days |
+| Phase 3 | One-Time Tasks | 2-3 days | 14 days |
+| Phase 4 | Scheduler v1 (ML) | 2-3 weeks | ~35 days |
+| **Phase 5** | **User Profile & Categories** | **3-4 days** | **39 days** |
+| **Phase 6** | **Onboarding Flow** | **3-4 days** | **43 days** |
+| **Phase 7** | **Habit Tracking** | **2-3 days** | **46 days** |
+| **Phase 8** | **Enhanced ML Features** | **2-3 days** | **49 days** |
+| **Phase 9** | **Scheduler v2** | **4-5 days** | **54 days** |
+| Phase 10 | Polish | 3-4 days | 58 days |
+| Phase 11 | Testing | 3-5 days | 63 days |
+| Phase 12 | Release | 2-3 days | **66 days** |
 
-**Estimated Total:** ~7-8 weeks for MVP with ML
+**Estimated Total:** ~9-10 weeks for MVP with Smart Scheduling v2
+
+---
+
+## Implementation Order (Scheduler v2 Prerequisites)
+
+```
+Phase 5: User Profile & Categories (FOUNDATION)
+    │
+    ├─→ UserProfile model + repository
+    ├─→ Goal category field + optimal hours
+    │
+    ▼
+Phase 6: Onboarding Flow (USER DATA CAPTURE)
+    │
+    ├─→ 6-screen onboarding UI
+    ├─→ Profile saved on completion
+    │
+    ▼
+Phase 7: Habit Tracking (CONSISTENCY FOUNDATION)
+    │
+    ├─→ HabitMetrics model + service
+    ├─→ Streak/consistency calculations
+    │
+    ▼
+Phase 8: Enhanced ML Features (SMARTER PREDICTIONS)
+    │
+    ├─→ Context features in ProductivityData
+    ├─→ Enhanced ML service
+    │
+    ▼
+Phase 9: Scheduler v2 (INTEGRATION)
+    │
+    ├─→ ProfileBasedScheduler (Tier 2)
+    ├─→ DynamicTimeWindowService
+    ├─→ HybridScheduler v2 (3-tier)
+    └─→ Habit formation overlay
+```
 
 ---
 
 ## Notes
 
+- **Phases 5-9 are the Scheduler v2 prerequisite chain** - must be done in order
 - Each phase builds upon the previous one
-- Phases 2-6 can have some parallel development
-- ML integration (Phase 7) is the most complex and may require iteration
+- Phase 9 cannot start until Phases 5-8 are complete
 - Timeline assumes single developer working full-time
-- Add buffer time for unexpected challenges, especially in ML phase
+- Add buffer time for unexpected challenges
+- **Current Progress:** Phase 4 complete, ready to start Phase 5
