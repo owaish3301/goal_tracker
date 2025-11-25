@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:goal_tracker/core/theme/app_colors.dart';
 
 /// Animated page indicator for onboarding
@@ -64,7 +65,10 @@ class OnboardingOptionCard extends StatelessWidget {
     final color = accentColor ?? AppColors.primary;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
@@ -182,7 +186,12 @@ class OnboardingButton extends StatelessWidget {
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
+        onPressed: isLoading || onPressed == null
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                onPressed!();
+              },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.textInversePrimary,
@@ -236,7 +245,12 @@ class OnboardingSecondaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextButton(
-      onPressed: onPressed,
+      onPressed: onPressed == null
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              onPressed!();
+            },
       style: TextButton.styleFrom(
         foregroundColor: AppColors.textSecondary,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -323,7 +337,10 @@ class OnboardingTimePicker extends StatelessWidget {
                 perspective: 0.005,
                 diameterRatio: 1.5,
                 physics: const FixedExtentScrollPhysics(),
-                onSelectedItemChanged: onChanged,
+                onSelectedItemChanged: (value) {
+                  HapticFeedback.selectionClick();
+                  onChanged(value);
+                },
                 childDelegate: ListWheelChildBuilderDelegate(
                   childCount: 24,
                   builder: (context, index) {

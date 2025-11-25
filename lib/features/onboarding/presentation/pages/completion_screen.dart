@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:goal_tracker/core/theme/app_colors.dart';
 
 /// Completion screen with celebration
@@ -95,6 +96,9 @@ class _CompletionScreenState extends State<CompletionScreen>
     _mainController.forward();
     _confettiController.repeat();
     _pulseController.repeat(reverse: true);
+    
+    // Play success haptic
+    HapticFeedback.mediumImpact();
   }
 
   @override
@@ -256,7 +260,10 @@ class _CompletionScreenState extends State<CompletionScreen>
                   child: SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: widget.isLoading ? null : widget.onComplete,
+                          onPressed: widget.isLoading ? null : () {
+                            HapticFeedback.heavyImpact();
+                            widget.onComplete();
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: AppColors.background,

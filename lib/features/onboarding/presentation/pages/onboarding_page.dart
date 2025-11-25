@@ -24,10 +24,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
     with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  late PageController _pageController;
+  int _previousPage = 0;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: 0);
+    
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -49,6 +53,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
 
   @override
   void dispose() {
+    _pageController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -57,6 +62,22 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingControllerProvider);
     final controller = ref.read(onboardingControllerProvider.notifier);
+
+    // Animate to page when state changes
+    if (state.currentPage != _previousPage) {
+      print('>>> Widget detected page change: $_previousPage -> ${state.currentPage}');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pageController.hasClients) {
+          print('>>> Widget animating PageController to page: ${state.currentPage}');
+          _pageController.animateToPage(
+            state.currentPage,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      });
+      _previousPage = state.currentPage;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -72,7 +93,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
                 // Page content
                 Expanded(
                   child: PageView(
-                    controller: controller.pageController,
+                    controller: _pageController,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
                       WelcomeScreen(

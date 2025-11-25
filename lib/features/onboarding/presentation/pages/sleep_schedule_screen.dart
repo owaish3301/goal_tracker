@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:goal_tracker/core/theme/app_colors.dart';
 import 'package:goal_tracker/features/onboarding/presentation/widgets/onboarding_widgets.dart';
 
@@ -302,7 +303,10 @@ class _SleepScheduleScreenState extends State<SleepScheduleScreen>
           ),
           // Time selector
           GestureDetector(
-            onTap: () => _showTimePicker(label, hour, onChanged),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              _showTimePicker(label, hour, onChanged);
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:goal_tracker/core/theme/app_colors.dart';
 import 'package:goal_tracker/data/models/user_profile.dart';
 import 'package:goal_tracker/features/onboarding/presentation/widgets/onboarding_widgets.dart';
@@ -192,7 +193,10 @@ class _SessionLengthScreenState extends State<SessionLengthScreen>
     return ScaleTransition(
       scale: _scaleAnimations[index],
       child: GestureDetector(
-        onTap: () => widget.onSelect(length),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          widget.onSelect(length);
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,

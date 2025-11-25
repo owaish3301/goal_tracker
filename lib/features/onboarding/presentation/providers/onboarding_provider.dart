@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:goal_tracker/data/models/user_profile.dart';
 import 'package:goal_tracker/core/services/database_service.dart';
@@ -86,39 +87,36 @@ class OnboardingState {
 /// Onboarding controller notifier
 class OnboardingController extends StateNotifier<OnboardingState> {
   final Ref ref;
-  final PageController pageController;
 
-  OnboardingController(this.ref)
-      : pageController = PageController(),
-        super(const OnboardingState());
-
-  @override
-  void dispose() {
-    pageController.dispose();
-    super.dispose();
+  OnboardingController(this.ref) : super(const OnboardingState()) {
+    print('>>> OnboardingController CREATED');
   }
 
   /// Navigate to next page with animation
   void nextPage() {
+    print('>>> nextPage called. currentPage: ${state.currentPage}, totalPages: ${OnboardingState.totalPages}');
     if (state.currentPage < OnboardingState.totalPages - 1) {
-      state = state.copyWith(currentPage: state.currentPage + 1);
-      pageController.animateToPage(
-        state.currentPage,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
-      );
+      final nextPageIndex = state.currentPage + 1;
+      print('>>> Moving to page: $nextPageIndex');
+      HapticFeedback.lightImpact();
+      state = state.copyWith(currentPage: nextPageIndex);
+      print('>>> State updated. New currentPage: ${state.currentPage}');
+    } else {
+      print('>>> Already at last page, not moving');
     }
   }
 
   /// Navigate to previous page
   void previousPage() {
+    print('>>> previousPage called. currentPage: ${state.currentPage}');
     if (state.currentPage > 0) {
-      state = state.copyWith(currentPage: state.currentPage - 1);
-      pageController.animateToPage(
-        state.currentPage,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
-      );
+      final prevPageIndex = state.currentPage - 1;
+      print('>>> Moving back to page: $prevPageIndex');
+      HapticFeedback.lightImpact();
+      state = state.copyWith(currentPage: prevPageIndex);
+      print('>>> State updated. New currentPage: ${state.currentPage}');
+    } else {
+      print('>>> Already at first page, not moving back');
     }
   }
 
@@ -134,14 +132,11 @@ class OnboardingController extends StateNotifier<OnboardingState> {
       workStartHour: state.data.workStartHour,
       workEndHour: state.data.workEndHour,
     );
+    final completionPage = OnboardingState.totalPages - 1;
+    HapticFeedback.mediumImpact();
     state = state.copyWith(
       data: data,
-      currentPage: OnboardingState.totalPages - 1,
-    );
-    pageController.animateToPage(
-      state.currentPage,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutCubic,
+      currentPage: completionPage,
     );
   }
 
@@ -243,6 +238,10 @@ class OnboardingController extends StateNotifier<OnboardingState> {
       );
 
       state = state.copyWith(isCompleting: false);
+      
+      // Invalidate the onboarding completed provider so router gets fresh value
+      ref.invalidate(isOnboardingCompletedProvider);
+      
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -255,8 +254,9 @@ class OnboardingController extends StateNotifier<OnboardingState> {
 }
 
 /// Provider for onboarding controller
+/// Note: Not using autoDispose to keep state during onboarding flow
 final onboardingControllerProvider =
-    StateNotifierProvider.autoDispose<OnboardingController, OnboardingState>(
+    StateNotifierProvider<OnboardingController, OnboardingState>(
   (ref) => OnboardingController(ref),
 );
 

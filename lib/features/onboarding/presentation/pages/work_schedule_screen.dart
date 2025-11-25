@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:goal_tracker/core/theme/app_colors.dart';
 import 'package:goal_tracker/features/onboarding/presentation/widgets/onboarding_widgets.dart';
 
@@ -125,6 +126,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
               opacity: _fadeAnimation,
               child: GestureDetector(
                 onTap: () {
+                  HapticFeedback.selectionClick();
                   setState(() {
                     _hasWorkSchedule = !_hasWorkSchedule;
                   });
@@ -326,7 +328,10 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
     required Color color,
   }) {
     return GestureDetector(
-      onTap: () => _showTimePicker(hour ?? 9, onChanged, color),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showTimePicker(hour ?? 9, onChanged, color);
+      },
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
