@@ -47,3 +47,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+test_*
+user_profile_test_*

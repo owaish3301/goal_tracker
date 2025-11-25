@@ -31,7 +31,7 @@ flutter test
 ## 🧪 Test Coverage
 
 ```bash
-# Run all tests (197 tests)
+# Run all tests (215 tests)
 flutter test --reporter compact
 ```
 
@@ -42,7 +42,8 @@ flutter test --reporter compact
 | Provider Tests (scheduledTaskProviders, timelineProviders) | 25 |
 | Repository Tests (Goal, Task, Milestone, OneTimeTask, UserProfile, etc.) | 52 |
 | Model Tests (GoalCategory) | 27 |
-| **Total** | **197** |
+| Onboarding Tests | 18 |
+| **Total** | **215** |
 
 ## 🏗️ Project Structure
 
@@ -50,14 +51,14 @@ flutter test --reporter compact
 lib/
 ├── core/           # Core utilities, constants, themes
 ├── data/           # Data layer (models, repositories, database)
-├── features/       # Feature modules (goals, scheduler, timeline)
+├── features/       # Feature modules (goals, scheduler, timeline, onboarding)
 ├── shared/         # Shared widgets and utilities
 └── main.dart       # App entry point
 ```
 
 ## 🎯 Current Phase
 
-**Phase 5: User Profile & Goal Categories** ✅ COMPLETE
+**Phase 6: Onboarding Flow** ✅ COMPLETE
 
 - ✅ Phase 0: Project Setup & Foundation
 - ✅ Phase 1: Core Data Layer  
@@ -65,7 +66,8 @@ lib/
 - ✅ Phase 3: One-Time Tasks
 - ✅ Phase 4: ML-Powered Scheduler (138 tests)
 - ✅ Phase 5: User Profile & Goal Categories (59 tests)
-- ⏳ Phase 6: Onboarding Flow (Next)
+- ✅ Phase 6: Onboarding Flow (18 tests)
+- ⏳ Phase 7: Habit Tracking Foundation (Next)
 
 See [DEVELOPMENT_PHASES.md](DEVELOPMENT_PHASES.md) for detailed roadmap.
 
