@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:goal_tracker/data/models/goal.dart';
+import 'package:goal_tracker/data/models/goal_category.dart';
 import 'package:goal_tracker/data/models/milestone.dart';
 import 'package:goal_tracker/features/goals/presentation/providers/goal_provider.dart';
 import 'package:goal_tracker/features/goals/presentation/widgets/frequency_selector.dart';
 import 'package:goal_tracker/features/goals/presentation/widgets/duration_picker.dart';
 import 'package:goal_tracker/features/goals/presentation/widgets/color_picker.dart';
 import 'package:goal_tracker/features/goals/presentation/widgets/icon_selector.dart';
+import 'package:goal_tracker/features/goals/presentation/widgets/category_selector.dart';
 import 'package:goal_tracker/features/goals/presentation/widgets/milestone_editor.dart';
 import 'package:goal_tracker/core/theme/app_colors.dart';
 import 'package:goal_tracker/core/constants/constants.dart';
@@ -30,6 +32,7 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
   int _durationMinutes = AppConstants.defaultDurationMinutes;
   Color _selectedColor = AppConstants.defaultGoalColor;
   String _selectedIconName = AppConstants.defaultIconName;
+  GoalCategory _selectedCategory = GoalCategory.other;
   List<Milestone> _milestones = [];
 
   bool _isLoading = true;
@@ -55,6 +58,7 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
             int.parse(goal.colorHex.replaceFirst('#', '0xFF')),
           );
           _selectedIconName = goal.iconName;
+          _selectedCategory = goal.category;
         });
 
         final milestoneRepo = ref.read(milestoneRepositoryProvider);
@@ -111,6 +115,7 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
           ..priorityIndex = await goalRepo.getGoalCount()
           ..colorHex = colorHex
           ..iconName = _selectedIconName
+          ..category = _selectedCategory
           ..createdAt = DateTime.now()
           ..isActive = true;
 
@@ -129,7 +134,8 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
             ..frequency = _selectedDays
             ..targetDuration = _durationMinutes
             ..colorHex = colorHex
-            ..iconName = _selectedIconName;
+            ..iconName = _selectedIconName
+            ..category = _selectedCategory;
 
           await goalNotifier.updateGoal(goal);
 
@@ -262,6 +268,14 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
                       selectedIconName: _selectedIconName,
                       onChanged: (iconName) =>
                           setState(() => _selectedIconName = iconName),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  RepaintBoundary(
+                    child: CategorySelector(
+                      selectedCategory: _selectedCategory,
+                      onChanged: (category) =>
+                          setState(() => _selectedCategory = category),
                     ),
                   ),
                   const SizedBox(height: 24),

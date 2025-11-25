@@ -31,7 +31,7 @@ flutter test
 ## 🧪 Test Coverage
 
 ```bash
-# Run all tests (138 tests)
+# Run all tests (197 tests)
 flutter test --reporter compact
 ```
 
@@ -40,8 +40,9 @@ flutter test --reporter compact
 | Core Services (HybridScheduler, ProductivityDataCollector, PatternBasedML) | 35 |
 | Widget Tests (TaskCompletionModal, ScheduledTaskCard, UnifiedTimelineCard) | 58 |
 | Provider Tests (scheduledTaskProviders, timelineProviders) | 25 |
-| Repository Tests (Goal, Task, Milestone, OneTimeTask, etc.) | 20 |
-| **Total** | **138** |
+| Repository Tests (Goal, Task, Milestone, OneTimeTask, UserProfile, etc.) | 52 |
+| Model Tests (GoalCategory) | 27 |
+| **Total** | **197** |
 
 ## 🏗️ Project Structure
 
@@ -56,13 +57,15 @@ lib/
 
 ## 🎯 Current Phase
 
-**Phase 4: ML-Powered Scheduler** ✅ COMPLETE
+**Phase 5: User Profile & Goal Categories** ✅ COMPLETE
 
 - ✅ Phase 0: Project Setup & Foundation
 - ✅ Phase 1: Core Data Layer  
 - ✅ Phase 2: Goal Management UI
 - ✅ Phase 3: One-Time Tasks
-- ✅ Phase 4: ML-Powered Scheduler (138 tests passing)
+- ✅ Phase 4: ML-Powered Scheduler (138 tests)
+- ✅ Phase 5: User Profile & Goal Categories (59 tests)
+- ⏳ Phase 6: Onboarding Flow (Next)
 
 See [DEVELOPMENT_PHASES.md](DEVELOPMENT_PHASES.md) for detailed roadmap.
 

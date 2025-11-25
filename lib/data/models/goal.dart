@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'milestone.dart';
 import 'task.dart';
+import 'goal_category.dart';
 
 part 'goal.g.dart';
 
@@ -21,6 +22,10 @@ class Goal {
   // Priority index (lower = higher priority)
   @Index()
   late int priorityIndex;
+
+  // Goal category for smart scheduling
+  @enumerated
+  GoalCategory category = GoalCategory.other;
 
   // UI customization
   late String colorHex; // e.g., "#FF5733"
@@ -51,6 +56,7 @@ class Goal {
         listEquals(other.frequency, frequency) &&
         other.targetDuration == targetDuration &&
         other.priorityIndex == priorityIndex &&
+        other.category == category &&
         other.colorHex == colorHex &&
         other.iconName == iconName &&
         other.isActive == isActive &&
@@ -64,6 +70,7 @@ class Goal {
         Object.hashAll(frequency) ^
         targetDuration.hashCode ^
         priorityIndex.hashCode ^
+        category.hashCode ^
         colorHex.hashCode ^
         iconName.hashCode ^
         isActive.hashCode ^

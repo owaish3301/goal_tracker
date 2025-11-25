@@ -166,13 +166,13 @@ This document outlines the phased development approach for the Goal Tracker app,
 
 ---
 
-## Phase 5: User Profile & Goal Categories (Prerequisites for Scheduler v2)
+## Phase 5: User Profile & Goal Categories (Prerequisites for Scheduler v2) ✅ COMPLETE
 **Duration:** 3-4 days  
 **Goal:** Build foundation for personalized scheduling - User profiling and goal categorization
-**Status:** NOT STARTED
+**Status:** COMPLETE (197 tests passing)
 
-### Part A: User Profile Data Layer
-- [ ] Create `UserProfile` Isar model with fields:
+### Part A: User Profile Data Layer ✅
+- [x] Create `UserProfile` Isar model with fields:
   - `chronoType` (earlyBird, normal, nightOwl, flexible)
   - `wakeUpHour`, `sleepHour`
   - `workStartHour`, `workEndHour` (optional)
@@ -180,29 +180,37 @@ This document outlines the phased development approach for the Goal Tracker app,
   - `preferredSessionLength` (short, medium, long)
   - `prefersRoutine` boolean
   - `onboardingCompleted` flag
-- [ ] Create `UserProfileRepository` with CRUD operations
-- [ ] Create `userProfileProvider` for state management
-- [ ] Write unit tests for UserProfile repository
-- [ ] Add UserProfileSchema to DatabaseService initialization
+- [x] Create `UserProfileRepository` with CRUD operations
+- [x] Create `userProfileRepositoryProvider` for state management
+- [x] Write unit tests for UserProfile repository (32 tests)
+- [x] Add UserProfileSchema to DatabaseService initialization
 
-### Part B: Goal Categories
-- [ ] Add `GoalCategory` enum to goal model:
+### Part B: Goal Categories ✅
+- [x] Add `GoalCategory` enum to goal model:
   - exercise, learning, creative, work, wellness, social, chores, other
-- [ ] Update `Goal` model with `category` field
-- [ ] Create research-backed optimal hours mapping per category
-- [ ] Update goal form UI to include category selector
-- [ ] Migrate existing goals to 'other' category
-- [ ] Write tests for category functionality
+- [x] Update `Goal` model with `category` field
+- [x] Create research-backed optimal hours mapping per category
+- [x] Create `GoalCategoryService` for scheduling logic
+- [x] Write tests for category functionality (27 tests)
+- [x] Create `CategorySelector` widget with optimal time hints
+- [x] Update goal form UI to include category selector
+- [x] Migrate existing goals to 'other' category (auto via default)
 
-### Part C: App Settings Enhancement
+### Part C: App Settings Enhancement (Deferred to Phase 9)
 - [ ] Extend `AppSettings` model if needed for global preferences
 - [ ] Add settings for notification preferences (future use)
 - [ ] Create settings repository and provider
 
 ### Deliverables
-- UserProfile model and repository
-- Goal categories with optimal time mappings
-- Foundation for personalized scheduling
+- ✅ UserProfile model and repository (with 32 tests)
+- ✅ Goal categories with optimal time mappings (with 27 tests)
+- ✅ CategorySelector widget with optimal time hints
+- ✅ Goal form UI with category selector
+- ✅ Foundation for personalized scheduling
+
+### Test Coverage
+- **Phase 5 Tests:** 59 tests (all passing)
+- **Total Tests:** 197 tests (all passing)
 
 ---
 

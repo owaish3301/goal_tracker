@@ -8,6 +8,7 @@ import '../../data/models/one_time_task.dart';
 import '../../data/models/scheduled_task.dart';
 import '../../data/models/productivity_data.dart';
 import '../../data/models/app_settings.dart';
+import '../../data/models/user_profile.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../data/repositories/milestone_repository.dart';
 import '../../data/repositories/task_repository.dart';
@@ -15,6 +16,7 @@ import '../../data/repositories/one_time_task_repository.dart';
 import '../../data/repositories/scheduled_task_repository.dart';
 import '../../data/repositories/productivity_data_repository.dart';
 import '../../data/repositories/app_settings_repository.dart';
+import '../../data/repositories/user_profile_repository.dart';
 
 class DatabaseService {
   static Isar? _isar;
@@ -36,6 +38,7 @@ class DatabaseService {
         ScheduledTaskSchema,
         ProductivityDataSchema,
         AppSettingsSchema,
+        UserProfileSchema,
       ],
       directory: dir.path,
       name: 'goal_tracker',
@@ -108,4 +111,9 @@ final productivityDataRepositoryProvider = Provider<ProductivityDataRepository>(
 final appSettingsRepositoryProvider = Provider<AppSettingsRepository>((ref) {
   final isar = ref.watch(isarProvider);
   return AppSettingsRepository(isar);
+});
+
+final userProfileRepositoryProvider = Provider<UserProfileRepository>((ref) {
+  final isar = ref.watch(isarProvider);
+  return UserProfileRepository(isar);
 });

@@ -17,48 +17,59 @@ const GoalSchema = CollectionSchema(
   name: r'Goal',
   id: 4693499363663894908,
   properties: {
-    r'colorHex': PropertySchema(
+    r'category': PropertySchema(
       id: 0,
+      name: r'category',
+      type: IsarType.byte,
+      enumMap: _GoalcategoryEnumValueMap,
+    ),
+    r'colorHex': PropertySchema(
+      id: 1,
       name: r'colorHex',
       type: IsarType.string,
     ),
     r'createdAt': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'frequency': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'frequency',
       type: IsarType.longList,
     ),
+    r'hashCode': PropertySchema(
+      id: 4,
+      name: r'hashCode',
+      type: IsarType.long,
+    ),
     r'iconName': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'iconName',
       type: IsarType.string,
     ),
     r'isActive': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'isActive',
       type: IsarType.bool,
     ),
     r'priorityIndex': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'priorityIndex',
       type: IsarType.long,
     ),
     r'targetDuration': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'targetDuration',
       type: IsarType.long,
     ),
     r'title': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'title',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -138,15 +149,17 @@ void _goalSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.colorHex);
-  writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeLongList(offsets[2], object.frequency);
-  writer.writeString(offsets[3], object.iconName);
-  writer.writeBool(offsets[4], object.isActive);
-  writer.writeLong(offsets[5], object.priorityIndex);
-  writer.writeLong(offsets[6], object.targetDuration);
-  writer.writeString(offsets[7], object.title);
-  writer.writeDateTime(offsets[8], object.updatedAt);
+  writer.writeByte(offsets[0], object.category.index);
+  writer.writeString(offsets[1], object.colorHex);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeLongList(offsets[3], object.frequency);
+  writer.writeLong(offsets[4], object.hashCode);
+  writer.writeString(offsets[5], object.iconName);
+  writer.writeBool(offsets[6], object.isActive);
+  writer.writeLong(offsets[7], object.priorityIndex);
+  writer.writeLong(offsets[8], object.targetDuration);
+  writer.writeString(offsets[9], object.title);
+  writer.writeDateTime(offsets[10], object.updatedAt);
 }
 
 Goal _goalDeserialize(
@@ -156,16 +169,19 @@ Goal _goalDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Goal();
-  object.colorHex = reader.readString(offsets[0]);
-  object.createdAt = reader.readDateTime(offsets[1]);
-  object.frequency = reader.readLongList(offsets[2]) ?? [];
-  object.iconName = reader.readString(offsets[3]);
+  object.category =
+      _GoalcategoryValueEnumMap[reader.readByteOrNull(offsets[0])] ??
+          GoalCategory.exercise;
+  object.colorHex = reader.readString(offsets[1]);
+  object.createdAt = reader.readDateTime(offsets[2]);
+  object.frequency = reader.readLongList(offsets[3]) ?? [];
+  object.iconName = reader.readString(offsets[5]);
   object.id = id;
-  object.isActive = reader.readBool(offsets[4]);
-  object.priorityIndex = reader.readLong(offsets[5]);
-  object.targetDuration = reader.readLong(offsets[6]);
-  object.title = reader.readString(offsets[7]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[8]);
+  object.isActive = reader.readBool(offsets[6]);
+  object.priorityIndex = reader.readLong(offsets[7]);
+  object.targetDuration = reader.readLong(offsets[8]);
+  object.title = reader.readString(offsets[9]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[10]);
   return object;
 }
 
@@ -177,27 +193,53 @@ P _goalDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
+      return (_GoalcategoryValueEnumMap[reader.readByteOrNull(offset)] ??
+          GoalCategory.exercise) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readLongList(offset) ?? []) as P;
+      return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongList(offset) ?? []) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 5:
-      return (reader.readLong(offset)) as P;
-    case 6:
-      return (reader.readLong(offset)) as P;
-    case 7:
       return (reader.readString(offset)) as P;
+    case 6:
+      return (reader.readBool(offset)) as P;
+    case 7:
+      return (reader.readLong(offset)) as P;
     case 8:
+      return (reader.readLong(offset)) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
       return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _GoalcategoryEnumValueMap = {
+  'exercise': 0,
+  'learning': 1,
+  'creative': 2,
+  'work': 3,
+  'wellness': 4,
+  'social': 5,
+  'chores': 6,
+  'other': 7,
+};
+const _GoalcategoryValueEnumMap = {
+  0: GoalCategory.exercise,
+  1: GoalCategory.learning,
+  2: GoalCategory.creative,
+  3: GoalCategory.work,
+  4: GoalCategory.wellness,
+  5: GoalCategory.social,
+  6: GoalCategory.chores,
+  7: GoalCategory.other,
+};
 
 Id _goalGetId(Goal object) {
   return object.id;
@@ -440,6 +482,59 @@ extension GoalQueryWhere on QueryBuilder<Goal, Goal, QWhereClause> {
 }
 
 extension GoalQueryFilter on QueryBuilder<Goal, Goal, QFilterCondition> {
+  QueryBuilder<Goal, Goal, QAfterFilterCondition> categoryEqualTo(
+      GoalCategory value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'category',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterFilterCondition> categoryGreaterThan(
+    GoalCategory value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'category',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterFilterCondition> categoryLessThan(
+    GoalCategory value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'category',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterFilterCondition> categoryBetween(
+    GoalCategory lower,
+    GoalCategory upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'category',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<Goal, Goal, QAfterFilterCondition> colorHexEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -756,6 +851,58 @@ extension GoalQueryFilter on QueryBuilder<Goal, Goal, QFilterCondition> {
         upper,
         includeUpper,
       );
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterFilterCondition> hashCodeEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'hashCode',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterFilterCondition> hashCodeGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'hashCode',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterFilterCondition> hashCodeLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'hashCode',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterFilterCondition> hashCodeBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'hashCode',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
@@ -1369,6 +1516,18 @@ extension GoalQueryLinks on QueryBuilder<Goal, Goal, QFilterCondition> {
 }
 
 extension GoalQuerySortBy on QueryBuilder<Goal, Goal, QSortBy> {
+  QueryBuilder<Goal, Goal, QAfterSortBy> sortByCategory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterSortBy> sortByCategoryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.desc);
+    });
+  }
+
   QueryBuilder<Goal, Goal, QAfterSortBy> sortByColorHex() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'colorHex', Sort.asc);
@@ -1390,6 +1549,18 @@ extension GoalQuerySortBy on QueryBuilder<Goal, Goal, QSortBy> {
   QueryBuilder<Goal, Goal, QAfterSortBy> sortByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterSortBy> sortByHashCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hashCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterSortBy> sortByHashCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hashCode', Sort.desc);
     });
   }
 
@@ -1467,6 +1638,18 @@ extension GoalQuerySortBy on QueryBuilder<Goal, Goal, QSortBy> {
 }
 
 extension GoalQuerySortThenBy on QueryBuilder<Goal, Goal, QSortThenBy> {
+  QueryBuilder<Goal, Goal, QAfterSortBy> thenByCategory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterSortBy> thenByCategoryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.desc);
+    });
+  }
+
   QueryBuilder<Goal, Goal, QAfterSortBy> thenByColorHex() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'colorHex', Sort.asc);
@@ -1488,6 +1671,18 @@ extension GoalQuerySortThenBy on QueryBuilder<Goal, Goal, QSortThenBy> {
   QueryBuilder<Goal, Goal, QAfterSortBy> thenByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterSortBy> thenByHashCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hashCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QAfterSortBy> thenByHashCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hashCode', Sort.desc);
     });
   }
 
@@ -1577,6 +1772,12 @@ extension GoalQuerySortThenBy on QueryBuilder<Goal, Goal, QSortThenBy> {
 }
 
 extension GoalQueryWhereDistinct on QueryBuilder<Goal, Goal, QDistinct> {
+  QueryBuilder<Goal, Goal, QDistinct> distinctByCategory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'category');
+    });
+  }
+
   QueryBuilder<Goal, Goal, QDistinct> distinctByColorHex(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1593,6 +1794,12 @@ extension GoalQueryWhereDistinct on QueryBuilder<Goal, Goal, QDistinct> {
   QueryBuilder<Goal, Goal, QDistinct> distinctByFrequency() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'frequency');
+    });
+  }
+
+  QueryBuilder<Goal, Goal, QDistinct> distinctByHashCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'hashCode');
     });
   }
 
@@ -1642,6 +1849,12 @@ extension GoalQueryProperty on QueryBuilder<Goal, Goal, QQueryProperty> {
     });
   }
 
+  QueryBuilder<Goal, GoalCategory, QQueryOperations> categoryProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'category');
+    });
+  }
+
   QueryBuilder<Goal, String, QQueryOperations> colorHexProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'colorHex');
@@ -1657,6 +1870,12 @@ extension GoalQueryProperty on QueryBuilder<Goal, Goal, QQueryProperty> {
   QueryBuilder<Goal, List<int>, QQueryOperations> frequencyProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'frequency');
+    });
+  }
+
+  QueryBuilder<Goal, int, QQueryOperations> hashCodeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'hashCode');
     });
   }
 
