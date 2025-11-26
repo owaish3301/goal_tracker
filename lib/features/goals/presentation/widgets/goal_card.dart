@@ -26,84 +26,77 @@ class GoalCard extends StatelessWidget {
 
     // RepaintBoundary prevents repaint propagation during scrolling
     return RepaintBoundary(
-      child: Dismissible(
-        key: Key(goal.id.toString()),
-        direction: DismissDirection.endToStart,
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 24),
-          decoration: BoxDecoration(
-            color: AppColors.error,
-            borderRadius: BorderRadius.circular(32),
-          ),
-          child:
-              const Icon(Icons.delete_outline, color: Colors.white, size: 28),
-        ),
-        confirmDismiss: (direction) async {
-          return await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Delete Goal'),
-              content: Text('Are you sure you want to delete "${goal.title}"?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: TextButton.styleFrom(foregroundColor: AppColors.error),
-                  child: const Text('Delete'),
-                ),
-              ],
+      child: Card(
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onDelete != null
+              ? () => _showDeleteConfirmation(context)
+              : null,
+          borderRadius: BorderRadius.circular(32),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border(left: BorderSide(color: color, width: 4)),
+              borderRadius: BorderRadius.circular(32),
             ),
-          );
-        },
-        onDismissed: (direction) => onDelete?.call(),
-        child: Card(
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(32),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                border: Border(left: BorderSide(color: color, width: 4)),
-                borderRadius: BorderRadius.circular(32),
-              ),
-              child: Row(
-                children: [
-                  _GoalIconBadge(color: color, icon: icon),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          goal.title,
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                        ),
-                        const SizedBox(height: 8),
-                        _DayIndicators(
-                          frequency: goal.frequency,
-                          activeColor: color,
-                        ),
-                        const SizedBox(height: 8),
-                        _DurationLabel(duration: goal.targetDuration),
-                      ],
-                    ),
+            child: Row(
+              children: [
+                _GoalIconBadge(color: color, icon: icon),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        goal.title,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      _DayIndicators(
+                        frequency: goal.frequency,
+                        activeColor: color,
+                      ),
+                      const SizedBox(height: 8),
+                      _DurationLabel(duration: goal.targetDuration),
+                    ],
                   ),
-                  const Icon(Icons.drag_handle, color: AppColors.textSecondary),
-                ],
-              ),
+                ),
+                const Icon(Icons.drag_handle, color: AppColors.textSecondary),
+              ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _showDeleteConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Delete Goal'),
+        content: Text('Are you sure you want to delete "${goal.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      onDelete?.call();
+    }
   }
 }
 
