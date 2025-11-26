@@ -122,6 +122,7 @@ class _MilestoneEditorState extends State<MilestoneEditor> {
                 child: TextField(
                   controller: _controller,
                   style: const TextStyle(color: AppColors.textPrimary),
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
                     hintText: 'Add a milestone...',
                     hintStyle: const TextStyle(color: AppColors.textSecondary),

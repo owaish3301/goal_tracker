@@ -108,7 +108,8 @@ class _SessionLengthScreenState extends State<SessionLengthScreen>
           Expanded(
             child: FadeTransition(
               opacity: _fadeAnimation,
-              child: Column(
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
                 children: [
                   _buildSessionCard(
                     index: 0,

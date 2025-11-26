@@ -75,6 +75,7 @@ void main() {
     required List<int> frequency,
     required int targetDuration,
     int priorityIndex = 0,
+    DateTime? createdAt,
   }) async {
     final goal = Goal()
       ..title = title
@@ -84,7 +85,7 @@ void main() {
       ..colorHex = '#FF5733'
       ..iconName = 'fitness_center'
       ..isActive = true
-      ..createdAt = DateTime.now();
+      ..createdAt = createdAt ?? DateTime(2024, 1, 1); // Default to before test dates
 
     await goalRepository.createGoal(goal);
     return goal;

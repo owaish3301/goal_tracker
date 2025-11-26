@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:goal_tracker/data/models/goal.dart';
 import 'package:goal_tracker/data/repositories/goal_repository.dart';
 import 'package:goal_tracker/core/services/database_service.dart';
+import 'package:goal_tracker/features/scheduled_tasks/presentation/providers/scheduled_task_providers.dart';
+import 'package:goal_tracker/features/timeline/presentation/providers/timeline_providers.dart';
 
 // Goals list provider - fetches all goals sorted by priority
 // Uses FutureProvider instead of polling StreamProvider for better performance
@@ -83,8 +85,17 @@ class GoalNotifier extends StateNotifier<GoalState> {
   Future<void> deleteGoal(int id) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
+      // First delete all scheduled tasks for this goal
+      final scheduledTaskRepo = _ref.read(scheduledTaskRepositoryProvider);
+      await scheduledTaskRepo.deleteScheduledTasksByGoal(id);
+      
+      // Then delete the goal itself
       await _repository.deleteGoal(id);
+      
+      // Invalidate all related providers
       _invalidateGoalProviders();
+      _invalidateTimelineProviders();
+      
       state = state.copyWith(
         isLoading: false,
         successMessage: 'Goal deleted successfully',
@@ -94,6 +105,17 @@ class GoalNotifier extends StateNotifier<GoalState> {
         isLoading: false,
         error: 'Failed to delete goal: $e',
       );
+    }
+  }
+  
+  /// Invalidate timeline providers to refresh UI after goal changes
+  void _invalidateTimelineProviders() {
+    // Invalidate the last 7 days and next 7 days of timeline data
+    final now = DateTime.now();
+    for (int i = -7; i <= 7; i++) {
+      final date = DateTime(now.year, now.month, now.day + i);
+      _ref.invalidate(scheduledTasksForDateProvider(date));
+      _ref.invalidate(unifiedTimelineProvider(date));
     }
   }
 

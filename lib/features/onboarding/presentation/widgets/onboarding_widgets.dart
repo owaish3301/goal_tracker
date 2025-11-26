@@ -267,7 +267,7 @@ class OnboardingSecondaryButton extends StatelessWidget {
 }
 
 /// Animated time wheel picker for onboarding
-class OnboardingTimePicker extends StatelessWidget {
+class OnboardingTimePicker extends StatefulWidget {
   final String label;
   final int selectedHour;
   final ValueChanged<int> onChanged;
@@ -282,29 +282,55 @@ class OnboardingTimePicker extends StatelessWidget {
   });
 
   @override
+  State<OnboardingTimePicker> createState() => _OnboardingTimePickerState();
+}
+
+class _OnboardingTimePickerState extends State<OnboardingTimePicker> {
+  late FixedExtentScrollController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // Use a large initial offset to allow scrolling in both directions
+    // We start in the "middle" of the virtual list
+    _controller = FixedExtentScrollController(
+      initialItem: widget.selectedHour,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+        if (widget.label.isNotEmpty) ...[
+          Text(
+            widget.label,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-        if (hint != null) ...[
+        ],
+        if (widget.hint != null) ...[
           const SizedBox(height: 4),
           Text(
-            hint!,
+            widget.hint!,
             style: TextStyle(
               color: AppColors.textSecondary.withValues(alpha: 0.7),
               fontSize: 13,
             ),
           ),
         ],
-        const SizedBox(height: 12),
+        if (widget.label.isNotEmpty || widget.hint != null)
+          const SizedBox(height: 12),
         Container(
           height: 120,
           decoration: BoxDecoration(
@@ -328,23 +354,21 @@ class OnboardingTimePicker extends StatelessWidget {
                   ),
                 ),
               ),
-              // Time wheel
+              // Time wheel - using looping delegate for cyclic scrolling
               ListWheelScrollView.useDelegate(
-                controller: FixedExtentScrollController(
-                  initialItem: selectedHour,
-                ),
+                controller: _controller,
                 itemExtent: 44,
                 perspective: 0.005,
                 diameterRatio: 1.5,
                 physics: const FixedExtentScrollPhysics(),
                 onSelectedItemChanged: (value) {
                   HapticFeedback.selectionClick();
-                  onChanged(value);
+                  // Convert to actual hour (0-23)
+                  widget.onChanged(value % 24);
                 },
-                childDelegate: ListWheelChildBuilderDelegate(
-                  childCount: 24,
-                  builder: (context, index) {
-                    final isSelected = index == selectedHour;
+                childDelegate: ListWheelChildLoopingListDelegate(
+                  children: List.generate(24, (index) {
+                    final isSelected = index == widget.selectedHour;
                     return Center(
                       child: Text(
                         _formatHour(index),
@@ -358,7 +382,7 @@ class OnboardingTimePicker extends StatelessWidget {
                         ),
                       ),
                     );
-                  },
+                  }),
                 ),
               ),
             ],

@@ -149,6 +149,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
               controller: _notesController,
               maxLines: 3,
               style: const TextStyle(color: AppColors.textPrimary),
+              textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 hintText: 'Any thoughts about this session?',
                 hintStyle: TextStyle(color: AppColors.textSecondary),

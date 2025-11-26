@@ -273,6 +273,7 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
                   TextFormField(
                     controller: _titleController,
                     style: const TextStyle(color: AppColors.textPrimary),
+                    textCapitalization: TextCapitalization.sentences,
                     onChanged: (_) => setState(() {}), // Update preview
                     decoration: InputDecoration(
                       labelText: 'Goal Title',

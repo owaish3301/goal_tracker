@@ -81,8 +81,8 @@ class HybridScheduler {
     final blockers = await _getBlockersForDate(date);
     print('   🚫 Found ${blockers.length} blockers');
 
-    // Calculate available slots
-    final availableSlots = ruleBasedScheduler.calculateAvailableSlots(
+    // Calculate available slots using dynamic wake/sleep times
+    final availableSlots = await ruleBasedScheduler.calculateAvailableSlotsAsync(
       date,
       blockers,
     );
@@ -216,19 +216,35 @@ class HybridScheduler {
     // Try to schedule at the sticky hour
     final stickyHour = metrics.stickyHour!;
     final freeSlots = ruleBasedScheduler.getFreeSlots(availableSlots, usedSlots);
+    final requiredMinutes = goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes;
 
-    for (final slot in freeSlots) {
-      if (slot.start.hour == stickyHour &&
-          slot.canFit(goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes)) {
-        print('      ✅ Locked to sticky hour ${stickyHour}:00');
-        return _createScheduledTask(
-          goal: goal,
-          date: date,
-          slot: slot,
-          method: 'habit-locked',
-          mlConfidence: null,
-        );
+    // Helper to check if a slot contains a target hour and create a slot starting at that hour
+    TimeSlot? _findSlotAtHour(List<TimeSlot> slots, int targetHour) {
+      for (final slot in slots) {
+        // Check if the target hour falls within this slot
+        final targetTime = DateTime(date.year, date.month, date.day, targetHour, 0);
+        final targetEnd = targetTime.add(Duration(minutes: requiredMinutes));
+        
+        if (!targetTime.isBefore(slot.start) && 
+            !targetEnd.isAfter(slot.end)) {
+          // Target hour is within this slot and there's enough time
+          return TimeSlot(targetTime, slot.end);
+        }
       }
+      return null;
+    }
+
+    // First try exact sticky hour
+    final stickySlot = _findSlotAtHour(freeSlots, stickyHour);
+    if (stickySlot != null) {
+      print('      ✅ Locked to sticky hour ${stickyHour}:00');
+      return _createScheduledTask(
+        goal: goal,
+        date: date,
+        slot: stickySlot,
+        method: 'habit-locked',
+        mlConfidence: null,
+      );
     }
 
     // Sticky hour not available, try adjacent hours
@@ -236,18 +252,16 @@ class HybridScheduler {
       final tryHour = stickyHour + offset;
       if (tryHour < 0 || tryHour > 23) continue;
 
-      for (final slot in freeSlots) {
-        if (slot.start.hour == tryHour &&
-            slot.canFit(goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes)) {
-          print('      ⚠️  Sticky hour unavailable, using ${tryHour}:00 (±${offset.abs()}h)');
-          return _createScheduledTask(
-            goal: goal,
-            date: date,
-            slot: slot,
-            method: 'habit-locked',
-            mlConfidence: null,
-          );
-        }
+      final adjacentSlot = _findSlotAtHour(freeSlots, tryHour);
+      if (adjacentSlot != null) {
+        print('      ⚠️  Sticky hour unavailable, using ${tryHour}:00 (±${offset.abs()}h)');
+        return _createScheduledTask(
+          goal: goal,
+          date: date,
+          slot: adjacentSlot,
+          method: 'habit-locked',
+          mlConfidence: null,
+        );
       }
     }
 
@@ -312,11 +326,18 @@ class HybridScheduler {
     // If we have a sticky hour that works, prefer it
     if (metrics.stickyHour != null) {
       final freeSlots = ruleBasedScheduler.getFreeSlots(availableSlots, usedSlots);
+      final stickyHour = metrics.stickyHour!;
+      final requiredMinutes = goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes;
+      
       for (final freeSlot in freeSlots) {
-        if (freeSlot.start.hour == metrics.stickyHour &&
-            freeSlot.canFit(goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes)) {
+        // Check if the sticky hour falls within this slot
+        final targetTime = DateTime(date.year, date.month, date.day, stickyHour, 0);
+        final targetEnd = targetTime.add(Duration(minutes: requiredMinutes));
+        
+        if (!targetTime.isBefore(freeSlot.start) && 
+            !targetEnd.isAfter(freeSlot.end)) {
           print('      🔥 Protecting ${metrics.currentStreak}-day streak, using sticky hour');
-          return freeSlot;
+          return TimeSlot(targetTime, freeSlot.end);
         }
       }
     }
@@ -432,11 +453,22 @@ class HybridScheduler {
   }
 
   /// Get active goals for a date
+  /// Only includes goals that were created on or before the date
   Future<List<Goal>> _getActiveGoalsForDate(DateTime date) async {
     final allGoals = await goalRepository.getAllGoals();
+    final dateOnly = DateTime(date.year, date.month, date.day);
 
     final goalsForDate = allGoals.where((goal) {
       if (goal.frequency.isEmpty) return false;
+      
+      // Don't schedule goals created after this date
+      final goalCreatedDate = DateTime(
+        goal.createdAt.year,
+        goal.createdAt.month,
+        goal.createdAt.day,
+      );
+      if (goalCreatedDate.isAfter(dateOnly)) return false;
+      
       final dayOfWeek = date.weekday - 1;
       return goal.frequency.contains(dayOfWeek);
     }).toList();

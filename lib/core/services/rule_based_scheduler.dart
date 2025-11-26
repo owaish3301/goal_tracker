@@ -5,6 +5,7 @@ import '../../data/models/scheduled_task.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../data/repositories/one_time_task_repository.dart';
 import '../../data/repositories/scheduled_task_repository.dart';
+import 'daily_activity_service.dart';
 
 /// Represents a time slot in the schedule
 class TimeSlot {
@@ -28,10 +29,11 @@ class RuleBasedScheduler {
   final GoalRepository goalRepository;
   final OneTimeTaskRepository oneTimeTaskRepository;
   final ScheduledTaskRepository scheduledTaskRepository;
+  final DailyActivityService? dailyActivityService;
 
-  // Scheduling constraints
-  static const int dayStartHour = 6; // 6 AM
-  static const int dayEndHour = 23; // 11 PM
+  // Default scheduling constraints (used if no DailyActivityService)
+  static const int defaultDayStartHour = 6; // 6 AM
+  static const int defaultDayEndHour = 23; // 11 PM
   static const int minTaskGapMinutes = 15; // Buffer between tasks
 
   RuleBasedScheduler({
@@ -39,6 +41,7 @@ class RuleBasedScheduler {
     required this.goalRepository,
     required this.oneTimeTaskRepository,
     required this.scheduledTaskRepository,
+    this.dailyActivityService,
   });
 
   /// Main scheduling method - generates schedule for a specific date
@@ -58,8 +61,8 @@ class RuleBasedScheduler {
     final blockers = await _getBlockersForDate(date);
     print('🚫 Found ${blockers.length} blocker tasks');
 
-    // 3. Calculate available time slots
-    final availableSlots = calculateAvailableSlots(date, blockers);
+    // 3. Calculate available time slots (using dynamic wake/sleep times)
+    final availableSlots = await calculateAvailableSlotsAsync(date, blockers);
     print('⏰ Available slots: ${availableSlots.length}');
     for (final slot in availableSlots) {
       print('   $slot');
@@ -119,9 +122,18 @@ class RuleBasedScheduler {
   /// Get goals that should be scheduled for this specific date
   Future<List<Goal>> _getActiveGoalsForDate(DateTime date) async {
     final allGoals = await goalRepository.getAllGoals();
+    final dateOnly = DateTime(date.year, date.month, date.day);
 
-    // Filter goals by frequency
+    // Filter goals by frequency and creation date
     final goalsForDate = allGoals.where((goal) {
+      // Don't schedule goals created after this date
+      final goalCreatedDate = DateTime(
+        goal.createdAt.year,
+        goal.createdAt.month,
+        goal.createdAt.day,
+      );
+      if (goalCreatedDate.isAfter(dateOnly)) return false;
+      
       return _shouldScheduleGoalOnDate(goal, date);
     }).toList();
 
@@ -147,11 +159,34 @@ class RuleBasedScheduler {
     return await oneTimeTaskRepository.getOneTimeTasksForDate(date);
   }
 
+  /// Get dynamic day start hour (learned or profile-based or default)
+  Future<int> _getDayStartHour(DateTime date) async {
+    if (dailyActivityService != null) {
+      return await dailyActivityService!.getEffectiveWakeHour(date);
+    }
+    return defaultDayStartHour;
+  }
+
+  /// Get dynamic day end hour (learned or profile-based or default)
+  Future<int> _getDayEndHour(DateTime date) async {
+    if (dailyActivityService != null) {
+      return await dailyActivityService!.getEffectiveSleepHour(date);
+    }
+    return defaultDayEndHour;
+  }
+
   /// Calculate available time slots after removing blockers (PUBLIC)
+  /// Uses default times - for async version use calculateAvailableSlotsAsync
   List<TimeSlot> calculateAvailableSlots(
     DateTime date,
-    List<OneTimeTask> blockers,
-  ) {
+    List<OneTimeTask> blockers, {
+    int? startHour,
+    int? endHour,
+  }) {
+    // Use provided hours or defaults
+    final dayStartHour = startHour ?? defaultDayStartHour;
+    final dayEndHour = endHour ?? defaultDayEndHour;
+    
     // Start with full day
     final dayStart = DateTime(date.year, date.month, date.day, dayStartHour, 0);
     final dayEnd = DateTime(date.year, date.month, date.day, dayEndHour, 0);
@@ -187,6 +222,19 @@ class RuleBasedScheduler {
     }
 
     return availableSlots;
+  }
+
+  /// Calculate available time slots using dynamic wake/sleep times (ASYNC)
+  Future<List<TimeSlot>> calculateAvailableSlotsAsync(
+    DateTime date,
+    List<OneTimeTask> blockers,
+  ) async {
+    final startHour = await _getDayStartHour(date);
+    final endHour = await _getDayEndHour(date);
+    
+    print('   🕐 Dynamic window: $startHour:00 - $endHour:00');
+    
+    return calculateAvailableSlots(date, blockers, startHour: startHour, endHour: endHour);
   }
 
   /// Find the best time slot for a goal based on priority (PUBLIC)

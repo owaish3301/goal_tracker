@@ -20,11 +20,17 @@ class MainApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
 
-    return MaterialApp.router(
-      title: 'Goal Tracker',
-      theme: AppTheme.darkTheme,
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
+    return GestureDetector(
+      // Dismiss keyboard when tapping outside of text fields
+      onTap: () {
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: MaterialApp.router(
+        title: 'Goal Tracker',
+        theme: AppTheme.darkTheme,
+        routerConfig: router,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

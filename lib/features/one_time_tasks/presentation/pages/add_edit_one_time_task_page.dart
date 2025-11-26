@@ -310,6 +310,7 @@ class _AddEditOneTimeTaskPageState extends State<AddEditOneTimeTaskPage> {
                     TextFormField(
                       controller: _titleController,
                       style: const TextStyle(color: AppColors.textPrimary),
+                      textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
                         hintText: 'e.g., Doctor Appointment, Laundry',
                         hintStyle: TextStyle(
@@ -450,6 +451,7 @@ class _AddEditOneTimeTaskPageState extends State<AddEditOneTimeTaskPage> {
                     TextFormField(
                       controller: _notesController,
                       style: const TextStyle(color: AppColors.textPrimary),
+                      textCapitalization: TextCapitalization.sentences,
                       maxLines: 3,
                       decoration: InputDecoration(
                         hintText: 'Add any additional details...',

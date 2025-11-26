@@ -180,19 +180,19 @@ class _DayCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 28,
-      height: 28,
+      width: 36, // Increased width to fit 3-letter day names
+      height: 24,
       decoration: BoxDecoration(
         color: isActive
             ? activeColor.withValues(alpha: 0.3)
             : AppColors.surfaceDark.withValues(alpha: 0.5),
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Center(
         child: Text(
           AppConstants.dayNames[dayIndex],
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: FontWeight.bold,
             color: isActive ? activeColor : AppColors.textSecondary,
           ),

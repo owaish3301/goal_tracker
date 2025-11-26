@@ -13,12 +13,14 @@ final ruleBasedSchedulerProvider = Provider<RuleBasedScheduler>((ref) {
   final goalRepo = ref.watch(goalRepositoryProvider);
   final oneTimeTaskRepo = ref.watch(oneTimeTaskRepositoryProvider);
   final scheduledTaskRepo = ref.watch(scheduledTaskRepositoryProvider);
+  final dailyActivityService = ref.watch(dailyActivityServiceProvider);
 
   return RuleBasedScheduler(
     isar: isar,
     goalRepository: goalRepo,
     oneTimeTaskRepository: oneTimeTaskRepo,
     scheduledTaskRepository: scheduledTaskRepo,
+    dailyActivityService: dailyActivityService,
   );
 });
 

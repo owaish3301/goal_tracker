@@ -69,21 +69,22 @@ void main() {
     habitMetricsRepository = HabitMetricsRepository(isar);
     dailyActivityLogRepository = DailyActivityLogRepository(isar);
 
+    dailyActivityService = DailyActivityService(
+      dailyActivityLogRepository,
+      userProfileRepository,
+    );
+
     ruleBasedScheduler = RuleBasedScheduler(
       isar: isar,
       goalRepository: goalRepository,
       oneTimeTaskRepository: oneTimeTaskRepository,
       scheduledTaskRepository: scheduledTaskRepository,
+      dailyActivityService: dailyActivityService,
     );
 
     mlPredictor = PatternBasedMLService(
       isar: isar,
       productivityDataRepository: productivityDataRepository,
-    );
-
-    dailyActivityService = DailyActivityService(
-      dailyActivityLogRepository,
-      userProfileRepository,
     );
 
     profileBasedScheduler = ProfileBasedScheduler(userProfileRepository);
@@ -118,6 +119,7 @@ void main() {
     int priorityIndex = 0,
     String colorHex = '#FF5733',
     String iconName = 'fitness_center',
+    DateTime? createdAt,
   }) async {
     final goal = Goal()
       ..title = title
@@ -127,7 +129,7 @@ void main() {
       ..colorHex = colorHex
       ..iconName = iconName
       ..isActive = true
-      ..createdAt = DateTime.now();
+      ..createdAt = createdAt ?? DateTime(2024, 1, 1); // Default to before test dates
 
     await goalRepository.createGoal(goal);
     return goal;
@@ -693,14 +695,14 @@ void main() {
         );
 
         // Create habit metrics with 21+ day streak and high consistency
-        // Use sticky hour 6 which is the start of the default scheduling window
+        // Use sticky hour 8 which is within the dynamic scheduling window (7-23 default)
         final metrics = HabitMetrics.createDefault(goal.id)
           ..currentStreak = 25
           ..longestStreak = 25
           ..lastCompletedDate = DateTime.now().subtract(const Duration(days: 1))
           ..consistencyScore = 0.9
           ..timeConsistency = 0.85 // 85% at same time
-          ..stickyHour = 6 // 6 AM is the sticky hour (start of scheduling window)
+          ..stickyHour = 8 // 8 AM is the sticky hour (within scheduling window)
           ..stickyDayOfWeek = null
           ..totalCompletions = 25
           ..totalScheduled = 28;
@@ -711,7 +713,7 @@ void main() {
 
         expect(tasks, hasLength(1));
         expect(tasks.first.schedulingMethod, 'habit-locked');
-        expect(tasks.first.scheduledStartTime.hour, 6); // Should be at sticky hour
+        expect(tasks.first.scheduledStartTime.hour, 8); // Should be at sticky hour
       });
 
       test('protects at-risk streaks with sticky hour preference', () async {
@@ -741,14 +743,14 @@ void main() {
         );
 
         // Create habit metrics with 14+ day streak (protection threshold)
-        // Use sticky hour 6 which is the start of the scheduling window
+        // Use sticky hour 8 which is within the scheduling window (7-23 default)
         final metrics = HabitMetrics.createDefault(goal.id)
           ..currentStreak = 15
           ..longestStreak = 15
           ..lastCompletedDate = DateTime.now().subtract(const Duration(days: 1))
           ..consistencyScore = 0.75
           ..timeConsistency = 0.6 // Not high enough for habit lock
-          ..stickyHour = 6 // 6 AM is preferred (matches scheduling window start)
+          ..stickyHour = 8 // 8 AM is preferred (within scheduling window)
           ..stickyDayOfWeek = null
           ..totalCompletions = 15
           ..totalScheduled = 20;
@@ -759,7 +761,7 @@ void main() {
 
         expect(tasks, hasLength(1));
         // With streak protection, scheduling still works (may use sticky or profile)
-        expect(tasks.first.scheduledStartTime.hour, 6); // Should be at sticky hour via protection
+        expect(tasks.first.scheduledStartTime.hour, 8); // Should be at sticky hour via protection
       });
 
       test('does not use habit-locked for short streaks', () async {

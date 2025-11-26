@@ -299,7 +299,7 @@ class AppConstants {
   static const String defaultIconName = 'star';
 
   // Day Names
-  static const List<String> dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  static const List<String> dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const List<String> dayFullNames = [
     'Monday',
     'Tuesday',

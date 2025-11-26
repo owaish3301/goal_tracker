@@ -203,7 +203,12 @@ class OneTimeTaskCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: task.isCompleted ? taskColor : Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: taskColor, width: 2),
+                      border: Border.all(
+                        color: onToggleComplete != null 
+                            ? taskColor 
+                            : AppColors.textSecondary.withValues(alpha: 0.5), 
+                        width: 2,
+                      ),
                     ),
                     child: task.isCompleted
                         ? const Icon(
