@@ -36,9 +36,21 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     });
   }
 
-  /// Generate schedule only if it doesn't exist (for date changes)
+  /// Generate schedule only for TODAY (not future dates)
+  /// Future dates show previews only, schedule is generated at midnight
   Future<void> _generateScheduleIfNeeded(DateTime date) async {
     final normalized = DateTime(date.year, date.month, date.day);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Only generate schedules for today or past dates, NOT future dates
+    // Future dates will show goal previews instead
+    if (normalized.isAfter(today)) {
+      print(
+        '📅 Skipping schedule generation for future date: ${normalized.toIso8601String().split('T')[0]} (will show previews)',
+      );
+      return;
+    }
 
     // Check if schedule exists
     final repo = ref.read(scheduledTaskRepositoryProvider);
@@ -72,8 +84,22 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   /// - Preserves rescheduled tasks
   /// - Only adds tasks for NEW goals
   /// - Doesn't touch existing scheduled tasks
+  /// - Only updates today or past dates (not future dates - they show previews)
   Future<void> _incrementalUpdateForDate(DateTime date) async {
     final normalized = DateTime(date.year, date.month, date.day);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Skip future dates - they show goal previews, not scheduled tasks
+    if (normalized.isAfter(today)) {
+      print(
+        '🔄 Skipping incremental update for future date: ${normalized.toIso8601String().split('T')[0]} (previews only)',
+      );
+      // Just refresh the preview
+      ref.invalidate(unifiedTimelineProvider(normalized));
+      return;
+    }
+
     final repo = ref.read(scheduledTaskRepositoryProvider);
     final hybridScheduler = ref.read(hybridSchedulerProvider);
 
