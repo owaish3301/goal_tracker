@@ -9,6 +9,9 @@
 ~~8. There is no option to reschedule the task generated from the goal~~ ✅ FIXED - Added long-press to reschedule with time picker modal
 ~~9. I deleted my goal but in the ui at some previous date the task for that goal still showing goes away on refresh although it is working just fine for the rest of the dates getting the instant update~~ ✅ FIXED - Goal deletion now deletes scheduled tasks and invalidates timeline cache for ±7 days
 
-10. deleting a one time task from timeline by sliding it creates an error the error flashes and disappears 
-11. pull down to refresh on timeline page should be removed this feature should not exist was there just to help in development
-12. in create task page for one time task it should have the create button at top just like the goals adding page else there is a scrolling and may create friction
+~~10. deleting a one time task from timeline by sliding it creates an error the error flashes and disappears~~ ✅ FIXED - Added onDelete callback to OneTimeTaskCard and connected it to UnifiedTimelineCard
+~~11. pull down to refresh on timeline page should be removed this feature should not exist was there just to help in development~~ ✅ FIXED - Removed RefreshIndicator from timeline page
+~~12. in create task page for one time task it should have the create button at top just like the goals adding page else there is a scrolling and may create friction~~ ✅ FIXED - Added "Create" button to AppBar in add_edit_one_time_task_page
+13. adding a new one time task from timeline page to a later date doesnot appear in the timeline of that date closing the app and opening again does bring it
+14. i think creating tasks for future dates is also a waste we should only do it in the background at 12am everyday and for the futures dates dont give them time just show the names of the tasks that will be there on that date also show the blockers as normal no changes in blockers here 
+15. reschedule any task coming from goals and then closing the app and coming back into the app resets the reschedule as it creates a new schedule everytime i guess. Need to refine the generating schedule logic what i think is should be 12am midnight and then any time user add one time task/ blockers  or a new goal is added or any goal is deleted even then rescheduled ones shouldnt change for the day

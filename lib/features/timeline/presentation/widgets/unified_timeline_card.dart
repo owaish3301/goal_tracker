@@ -57,6 +57,21 @@ class UnifiedTimelineCard extends ConsumerWidget {
             // Notify parent to refresh
             onCompleted?.call();
           } : null,
+          onDelete: () async {
+            // Haptic feedback for delete
+            HapticFeedback.mediumImpact();
+
+            print('🗑️ Deleting one-time task: ${task.id}');
+
+            // Delete the task
+            final notifier = ref.read(oneTimeTaskNotifierProvider.notifier);
+            await notifier.deleteTask(task.id);
+
+            print('✅ OneTimeTask deleted successfully');
+
+            // Notify parent to refresh
+            onCompleted?.call();
+          },
         );
       case TimelineItemType.scheduled:
         return ScheduledTaskCard(

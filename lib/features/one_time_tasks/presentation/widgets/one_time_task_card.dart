@@ -8,12 +8,14 @@ class OneTimeTaskCard extends StatelessWidget {
   final OneTimeTask task;
   final VoidCallback? onToggleComplete;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
   const OneTimeTaskCard({
     super.key,
     required this.task,
     this.onToggleComplete,
     this.onTap,
+    this.onDelete,
   });
 
   @override
@@ -69,7 +71,8 @@ class OneTimeTaskCard extends StatelessWidget {
         );
       },
       onDismissed: (direction) {
-        // The actual deletion will be handled by the parent widget
+        // Call the onDelete callback to actually delete the task
+        onDelete?.call();
       },
       child: InkWell(
         onTap: onTap, // Remove default edit navigation

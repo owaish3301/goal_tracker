@@ -282,7 +282,18 @@ class _AddEditOneTimeTaskPageState extends State<AddEditOneTimeTaskPage> {
       appBar: AppBar(
         title: Text(_existingTask == null ? 'Add Event' : 'Edit Event'),
         actions: [
-          if (_existingTask != null)
+          if (_existingTask == null)
+            TextButton(
+              onPressed: _isLoading ? null : _saveTask,
+              child: const Text(
+                'Create',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          else
             IconButton(
               icon: const Icon(Icons.delete, color: AppColors.error),
               onPressed: _isLoading ? null : _deleteTask,

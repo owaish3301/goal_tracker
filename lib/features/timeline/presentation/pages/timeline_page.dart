@@ -364,29 +364,23 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           return _buildEmptyState();
         }
 
-        return RefreshIndicator(
-          onRefresh: () async {
-            // Regenerate schedule (picks up new goals)
-            await _regenerateScheduleForDate(selectedDate);
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          itemCount: tasks.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final item = tasks[index];
+            return UnifiedTimelineCard(
+              item: item,
+              onCompleted: () {
+                // Refresh timeline after completion
+                // Must invalidate the underlying providers too
+                ref.invalidate(tasksForDateProvider(selectedDate));
+                ref.invalidate(scheduledTasksForDateProvider(selectedDate));
+                ref.invalidate(unifiedTimelineProvider(selectedDate));
+              },
+            );
           },
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            itemCount: tasks.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final item = tasks[index];
-              return UnifiedTimelineCard(
-                item: item,
-                onCompleted: () {
-                  // Refresh timeline after completion
-                  // Must invalidate the underlying providers too
-                  ref.invalidate(tasksForDateProvider(selectedDate));
-                  ref.invalidate(scheduledTasksForDateProvider(selectedDate));
-                  ref.invalidate(unifiedTimelineProvider(selectedDate));
-                },
-              );
-            },
-          ),
         );
       },
       loading: () => const Center(
