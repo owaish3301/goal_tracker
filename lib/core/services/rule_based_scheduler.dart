@@ -185,7 +185,14 @@ class RuleBasedScheduler {
   }) {
     // Use provided hours or defaults
     final dayStartHour = startHour ?? defaultDayStartHour;
-    final dayEndHour = endHour ?? defaultDayEndHour;
+    var dayEndHour = endHour ?? defaultDayEndHour;
+    
+    // Handle sleep times after midnight (e.g., 1 AM = next day)
+    // If end hour is less than start hour, it means sleep is after midnight
+    // In this case, use 23:59 as the end time for scheduling purposes
+    if (dayEndHour <= dayStartHour) {
+      dayEndHour = 23; // Schedule up to 11 PM when sleep is after midnight
+    }
     
     // Start with full day
     final dayStart = DateTime(date.year, date.month, date.day, dayStartHour, 0);

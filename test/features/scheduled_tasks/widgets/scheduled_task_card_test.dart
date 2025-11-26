@@ -67,20 +67,22 @@ void main() {
       expect(find.text('Study Flutter'), findsOneWidget);
     });
 
-    testWidgets('displays scheduled time', (tester) async {
-      final task = createTestTask(hour: 14, minute: 30);
+    testWidgets('displays scheduled time range', (tester) async {
+      final task = createTestTask(hour: 14, minute: 30, duration: 60);
 
       await tester.pumpWidget(createSimpleTestWidget(task: task));
 
-      expect(find.text('14:30'), findsOneWidget);
+      // Now shows start time - end time format with AM/PM
+      expect(find.text('2:30 PM - 3:30 PM'), findsOneWidget);
     });
 
-    testWidgets('displays duration', (tester) async {
-      final task = createTestTask(duration: 45);
+    testWidgets('displays time range with custom duration', (tester) async {
+      final task = createTestTask(hour: 9, minute: 0, duration: 45);
 
       await tester.pumpWidget(createSimpleTestWidget(task: task));
 
-      expect(find.text('45min'), findsOneWidget);
+      // Shows start - end time range with AM/PM (9:00 + 45min = 9:45)
+      expect(find.text('9:00 AM - 9:45 AM'), findsOneWidget);
     });
 
     testWidgets('displays ML badge for ml-based scheduling', (tester) async {
@@ -172,12 +174,13 @@ void main() {
       expect(find.byIcon(Icons.access_time), findsOneWidget);
     });
 
-    testWidgets('displays timer icon for duration', (tester) async {
-      final task = createTestTask();
+    testWidgets('displays time range for default duration', (tester) async {
+      final task = createTestTask(hour: 9, minute: 0, duration: 60);
 
       await tester.pumpWidget(createSimpleTestWidget(task: task));
 
-      expect(find.byIcon(Icons.timer), findsOneWidget);
+      // Default 60 min duration shows 9:00 AM - 10:00 AM
+      expect(find.text('9:00 AM - 10:00 AM'), findsOneWidget);
     });
 
     testWidgets('card is tappable when not completed', (tester) async {
@@ -223,19 +226,21 @@ void main() {
     });
 
     testWidgets('displays morning time correctly', (tester) async {
-      final task = createTestTask(hour: 6, minute: 0);
+      final task = createTestTask(hour: 6, minute: 0, duration: 60);
 
       await tester.pumpWidget(createSimpleTestWidget(task: task));
 
-      expect(find.text('06:00'), findsOneWidget);
+      // Shows time range format with AM/PM
+      expect(find.text('6:00 AM - 7:00 AM'), findsOneWidget);
     });
 
     testWidgets('displays evening time correctly', (tester) async {
-      final task = createTestTask(hour: 21, minute: 45);
+      final task = createTestTask(hour: 21, minute: 45, duration: 60);
 
       await tester.pumpWidget(createSimpleTestWidget(task: task));
 
-      expect(find.text('21:45'), findsOneWidget);
+      // Shows time range format with AM/PM
+      expect(find.text('9:45 PM - 10:45 PM'), findsOneWidget);
     });
 
     testWidgets('different colors for completed vs incomplete tasks',

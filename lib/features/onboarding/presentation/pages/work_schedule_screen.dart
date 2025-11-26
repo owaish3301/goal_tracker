@@ -209,32 +209,35 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
 
           // Time pickers (conditional)
           if (_hasWorkSchedule) ...[
-            SlideTransition(
-              position: _slideAnimation,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Column(
-                  children: [
-                    _buildTimePicker(
-                      label: 'Work starts',
-                      emoji: '💼',
-                      hour: widget.workStartHour,
-                      onChanged: widget.onWorkStartChanged,
-                      color: const Color(0xFFFF9F0A),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTimePicker(
-                      label: 'Work ends',
-                      emoji: '🏠',
-                      hour: widget.workEndHour,
-                      onChanged: widget.onWorkEndChanged,
-                      color: const Color(0xFF30D158),
-                    ),
-                    const SizedBox(height: 20),
-                    // Work duration display
-                    if (widget.workStartHour != null && widget.workEndHour != null)
-                      _buildDurationDisplay(),
-                  ],
+            Expanded(
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ListView(
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      _buildTimePicker(
+                        label: 'Work starts',
+                        emoji: '💼',
+                        hour: widget.workStartHour,
+                        onChanged: widget.onWorkStartChanged,
+                        color: const Color(0xFFFF9F0A),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTimePicker(
+                        label: 'Work ends',
+                        emoji: '🏠',
+                        hour: widget.workEndHour,
+                        onChanged: widget.onWorkEndChanged,
+                        color: const Color(0xFF30D158),
+                      ),
+                      const SizedBox(height: 20),
+                      // Work duration display
+                      if (widget.workStartHour != null && widget.workEndHour != null)
+                        _buildDurationDisplay(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -244,46 +247,47 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF64D2FF).withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF64D2FF).withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Text('🌴', style: TextStyle(fontSize: 56)),
+                          ),
                         ),
-                        child: const Center(
-                          child: Text('🌴', style: TextStyle(fontSize: 56)),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'No problem!',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'No problem!',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
+                        const SizedBox(height: 8),
+                        Text(
+                          'Goals will be scheduled throughout\nyour waking hours',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textSecondary.withValues(alpha: 0.7),
+                            fontSize: 15,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Goals will be scheduled throughout\nyour waking hours',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textSecondary.withValues(alpha: 0.7),
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ],
-
-          const Spacer(),
 
           // Navigation
           Padding(

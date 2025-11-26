@@ -32,6 +32,22 @@ class ScheduledTaskCard extends ConsumerWidget {
     return taskDate.isAtSameMomentAs(today);
   }
 
+  /// Format time range as "HH:MM AM/PM - HH:MM AM/PM"
+  String _formatTimeRange() {
+    final startTime = task.scheduledStartTime;
+    final endTime = startTime.add(Duration(minutes: task.duration));
+    
+    String format(DateTime dt) {
+      final hour = dt.hour;
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      return '$hour12:$minute $period';
+    }
+    
+    return '${format(startTime)} - ${format(endTime)}';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final taskColor = Color(
@@ -96,7 +112,7 @@ class ScheduledTaskCard extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
 
-                      // Time and duration
+                      // Time (start - end)
                       Row(
                         children: [
                           const Icon(
@@ -106,21 +122,7 @@ class ScheduledTaskCard extends ConsumerWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${task.scheduledStartTime.hour.toString().padLeft(2, '0')}:${task.scheduledStartTime.minute.toString().padLeft(2, '0')}',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Icon(
-                            Icons.timer,
-                            size: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${task.duration}min',
+                            _formatTimeRange(),
                             style: const TextStyle(
                               fontSize: 14,
                               color: AppColors.textSecondary,

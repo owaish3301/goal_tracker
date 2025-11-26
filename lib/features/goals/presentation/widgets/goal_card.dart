@@ -148,19 +148,22 @@ class _DayIndicators extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(7, (index) {
-        final isActive = frequency.contains(index);
-        return Padding(
-          padding: EdgeInsets.only(right: index < 6 ? 4 : 0),
-          child: _DayCircle(
-            dayIndex: index,
-            isActive: isActive,
-            activeColor: activeColor,
-          ),
-        );
-      }),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(7, (index) {
+          final isActive = frequency.contains(index);
+          return Padding(
+            padding: EdgeInsets.only(right: index < 6 ? 4 : 0),
+            child: _DayCircle(
+              dayIndex: index,
+              isActive: isActive,
+              activeColor: activeColor,
+            ),
+          );
+        }),
+      ),
     );
   }
 }

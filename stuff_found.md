@@ -8,3 +8,7 @@
 ~~7. If i created a goal today why schedule it before todays~~ ✅ FIXED - Added filter to not schedule goals before their creation date
 ~~8. There is no option to reschedule the task generated from the goal~~ ✅ FIXED - Added long-press to reschedule with time picker modal
 ~~9. I deleted my goal but in the ui at some previous date the task for that goal still showing goes away on refresh although it is working just fine for the rest of the dates getting the instant update~~ ✅ FIXED - Goal deletion now deletes scheduled tasks and invalidates timeline cache for ±7 days
+
+10. deleting a one time task from timeline by sliding it creates an error the error flashes and disappears 
+11. pull down to refresh on timeline page should be removed this feature should not exist was there just to help in development
+12. in create task page for one time task it should have the create button at top just like the goals adding page else there is a scrolling and may create friction
