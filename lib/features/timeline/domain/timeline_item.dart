@@ -1,5 +1,6 @@
 import '../../../data/models/one_time_task.dart';
 import '../../../data/models/scheduled_task.dart';
+import '../../../data/models/goal.dart';
 
 /// Unified timeline item that can be either a OneTimeTask or ScheduledTask
 class TimelineItem {
@@ -62,6 +63,25 @@ class TimelineItem {
   /// Get the original task as ScheduledTask (if applicable)
   ScheduledTask? get asScheduledTask =>
       type == TimelineItemType.scheduled ? originalTask as ScheduledTask : null;
+
+  /// Get the original goal (for preview items)
+  Goal? get asGoal =>
+      type == TimelineItemType.preview ? originalTask as Goal : null;
+
+  /// Create from Goal for future date preview (no schedule generated yet)
+  factory TimelineItem.fromGoalPreview(Goal goal) {
+    return TimelineItem(
+      id: 'preview_${goal.id}',
+      title: goal.title,
+      scheduledTime: DateTime(2099), // Placeholder - preview items have no time
+      duration: goal.targetDuration,
+      colorHex: goal.colorHex,
+      iconName: goal.iconName,
+      isCompleted: false,
+      type: TimelineItemType.preview,
+      originalTask: goal,
+    );
+  }
 }
 
-enum TimelineItemType { oneTime, scheduled }
+enum TimelineItemType { oneTime, scheduled, preview }
