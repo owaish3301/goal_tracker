@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:goal_tracker/data/models/user_profile.dart';
 import 'package:goal_tracker/core/services/database_service.dart';
@@ -88,35 +86,21 @@ class OnboardingState {
 class OnboardingController extends StateNotifier<OnboardingState> {
   final Ref ref;
 
-  OnboardingController(this.ref) : super(const OnboardingState()) {
-    print('>>> OnboardingController CREATED');
-  }
+  OnboardingController(this.ref) : super(const OnboardingState());
 
   /// Navigate to next page with animation
   void nextPage() {
-    print('>>> nextPage called. currentPage: ${state.currentPage}, totalPages: ${OnboardingState.totalPages}');
     if (state.currentPage < OnboardingState.totalPages - 1) {
       final nextPageIndex = state.currentPage + 1;
-      print('>>> Moving to page: $nextPageIndex');
-      HapticFeedback.lightImpact();
       state = state.copyWith(currentPage: nextPageIndex);
-      print('>>> State updated. New currentPage: ${state.currentPage}');
-    } else {
-      print('>>> Already at last page, not moving');
     }
   }
 
   /// Navigate to previous page
   void previousPage() {
-    print('>>> previousPage called. currentPage: ${state.currentPage}');
     if (state.currentPage > 0) {
       final prevPageIndex = state.currentPage - 1;
-      print('>>> Moving back to page: $prevPageIndex');
-      HapticFeedback.lightImpact();
       state = state.copyWith(currentPage: prevPageIndex);
-      print('>>> State updated. New currentPage: ${state.currentPage}');
-    } else {
-      print('>>> Already at first page, not moving back');
     }
   }
 
@@ -133,7 +117,6 @@ class OnboardingController extends StateNotifier<OnboardingState> {
       workEndHour: state.data.workEndHour,
     );
     final completionPage = OnboardingState.totalPages - 1;
-    HapticFeedback.mediumImpact();
     state = state.copyWith(
       data: data,
       currentPage: completionPage,

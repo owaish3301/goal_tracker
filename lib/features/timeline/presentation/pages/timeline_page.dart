@@ -246,9 +246,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           Expanded(
             child: Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
               ),
               child: Column(
                 children: [
@@ -262,7 +262,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                           'INCOMING EVENTS',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
-                                color: AppColors.textInverseSecondary,
+                                color: AppColors.textSecondary,
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
@@ -402,7 +402,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               'Error loading tasks',
               style: const TextStyle(
                 fontSize: 18,
-                color: AppColors.textInverseSecondary,
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 8),
@@ -426,14 +426,14 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           Icon(
             Icons.calendar_today,
             size: 64,
-            color: AppColors.textInverseSecondary.withValues(alpha: 0.5),
+            color: AppColors.textSecondary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
             'No tasks scheduled',
             style: TextStyle(
               fontSize: 18,
-              color: AppColors.textInverseSecondary,
+              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
@@ -441,7 +441,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
             DateFormat('EEEE, MMM d').format(selectedDate),
             style: TextStyle(
               fontSize: 14,
-              color: AppColors.textInverseSecondary.withValues(alpha: 0.7),
+              color: AppColors.textSecondary.withValues(alpha: 0.7),
             ),
           ),
         ],

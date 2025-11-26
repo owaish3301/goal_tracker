@@ -189,7 +189,7 @@ class OnboardingButton extends StatelessWidget {
         onPressed: isLoading || onPressed == null
             ? null
             : () {
-                HapticFeedback.lightImpact();
+                HapticFeedback.selectionClick();
                 onPressed!();
               },
         style: ElevatedButton.styleFrom(

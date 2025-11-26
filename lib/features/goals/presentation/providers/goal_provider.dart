@@ -3,29 +3,18 @@ import 'package:goal_tracker/data/models/goal.dart';
 import 'package:goal_tracker/data/repositories/goal_repository.dart';
 import 'package:goal_tracker/core/services/database_service.dart';
 
-// Goals list provider - streams all goals sorted by priority
-final goalsProvider = StreamProvider<List<Goal>>((ref) async* {
+// Goals list provider - fetches all goals sorted by priority
+// Uses FutureProvider instead of polling StreamProvider for better performance
+final goalsProvider = FutureProvider<List<Goal>>((ref) async {
   final repository = ref.watch(goalRepositoryProvider);
-
-  // Initial load
-  yield await repository.getGoalsByPriority();
-
-  // Watch for changes (polling every second for now)
-  // In a real app, you'd use Isar's watch() feature
-  await for (final _ in Stream.periodic(const Duration(seconds: 1))) {
-    yield await repository.getGoalsByPriority();
-  }
+  return await repository.getGoalsByPriority();
 });
 
 // Active goals only provider
-final activeGoalsProvider = StreamProvider<List<Goal>>((ref) async* {
+// Invalidate this provider after CRUD operations via GoalNotifier
+final activeGoalsProvider = FutureProvider<List<Goal>>((ref) async {
   final repository = ref.watch(goalRepositoryProvider);
-
-  yield await repository.getActiveGoals();
-
-  await for (final _ in Stream.periodic(const Duration(seconds: 1))) {
-    yield await repository.getActiveGoals();
-  }
+  return await repository.getActiveGoals();
 });
 
 // Goal CRUD state
@@ -48,13 +37,20 @@ class GoalState {
 // Goal notifier for CRUD operations
 class GoalNotifier extends StateNotifier<GoalState> {
   final GoalRepository _repository;
+  final Ref _ref;
 
-  GoalNotifier(this._repository) : super(const GoalState());
+  GoalNotifier(this._repository, this._ref) : super(const GoalState());
+
+  void _invalidateGoalProviders() {
+    _ref.invalidate(goalsProvider);
+    _ref.invalidate(activeGoalsProvider);
+  }
 
   Future<void> createGoal(Goal goal) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _repository.createGoal(goal);
+      _invalidateGoalProviders();
       state = state.copyWith(
         isLoading: false,
         successMessage: 'Goal created successfully',
@@ -71,6 +67,7 @@ class GoalNotifier extends StateNotifier<GoalState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _repository.updateGoal(goal);
+      _invalidateGoalProviders();
       state = state.copyWith(
         isLoading: false,
         successMessage: 'Goal updated successfully',
@@ -87,6 +84,7 @@ class GoalNotifier extends StateNotifier<GoalState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _repository.deleteGoal(id);
+      _invalidateGoalProviders();
       state = state.copyWith(
         isLoading: false,
         successMessage: 'Goal deleted successfully',
@@ -103,6 +101,7 @@ class GoalNotifier extends StateNotifier<GoalState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _repository.updatePriorityIndexes(goals);
+      _invalidateGoalProviders();
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(
@@ -115,6 +114,7 @@ class GoalNotifier extends StateNotifier<GoalState> {
   Future<void> toggleGoalActive(int id, bool isActive) async {
     try {
       await _repository.toggleGoalActive(id, isActive);
+      _invalidateGoalProviders();
     } catch (e) {
       state = state.copyWith(error: 'Failed to toggle goal: $e');
     }
@@ -130,5 +130,5 @@ final goalNotifierProvider = StateNotifierProvider<GoalNotifier, GoalState>((
   ref,
 ) {
   final repository = ref.watch(goalRepositoryProvider);
-  return GoalNotifier(repository);
+  return GoalNotifier(repository, ref);
 });

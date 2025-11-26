@@ -65,14 +65,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage>
 
     // Animate to page when state changes
     if (state.currentPage != _previousPage) {
-      print('>>> Widget detected page change: $_previousPage -> ${state.currentPage}');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_pageController.hasClients) {
-          print('>>> Widget animating PageController to page: ${state.currentPage}');
           _pageController.animateToPage(
             state.currentPage,
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeOutCubic,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutExpo,
           );
         }
       });
