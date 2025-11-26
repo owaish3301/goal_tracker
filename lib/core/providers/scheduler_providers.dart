@@ -3,6 +3,8 @@ import '../services/database_service.dart';
 import '../services/rule_based_scheduler.dart';
 import '../services/pattern_based_ml_service.dart';
 import '../services/hybrid_scheduler.dart';
+import '../services/profile_based_scheduler.dart';
+import '../services/dynamic_time_window_service.dart';
 import 'productivity_providers.dart';
 
 /// Provider for the rule-based scheduler
@@ -35,7 +37,28 @@ final patternBasedMLServiceProvider = Provider<PatternBasedMLService>((ref) {
   );
 });
 
-/// Provider for the hybrid scheduler (ML + Rules)
+/// Provider for the profile-based scheduler (Tier 2)
+final profileBasedSchedulerProvider = Provider<ProfileBasedScheduler>((ref) {
+  final profileRepo = ref.watch(userProfileRepositoryProvider);
+  return ProfileBasedScheduler(profileRepo);
+});
+
+/// Provider for the dynamic time window service
+final dynamicTimeWindowServiceProvider = Provider<DynamicTimeWindowService>((ref) {
+  final activityRepo = ref.watch(dailyActivityLogRepositoryProvider);
+  final productivityRepo = ref.watch(productivityDataRepositoryProvider);
+  final profileRepo = ref.watch(userProfileRepositoryProvider);
+  final activityService = ref.watch(dailyActivityServiceProvider);
+
+  return DynamicTimeWindowService(
+    activityRepo: activityRepo,
+    productivityRepo: productivityRepo,
+    profileRepo: profileRepo,
+    activityService: activityService,
+  );
+});
+
+/// Provider for the hybrid scheduler v2 (ML + Profile + Rules + Habit Overlay)
 final hybridSchedulerProvider = Provider<HybridScheduler>((ref) {
   final isar = ref.watch(isarProvider);
   final goalRepo = ref.watch(goalRepositoryProvider);
@@ -43,6 +66,10 @@ final hybridSchedulerProvider = Provider<HybridScheduler>((ref) {
   final scheduledTaskRepo = ref.watch(scheduledTaskRepositoryProvider);
   final ruleBasedScheduler = ref.watch(ruleBasedSchedulerProvider);
   final mlPredictor = ref.watch(patternBasedMLServiceProvider);
+  final profileBasedScheduler = ref.watch(profileBasedSchedulerProvider);
+  final dynamicTimeWindowService = ref.watch(dynamicTimeWindowServiceProvider);
+  final habitMetricsRepo = ref.watch(habitMetricsRepositoryProvider);
+  final userProfileRepo = ref.watch(userProfileRepositoryProvider);
 
   return HybridScheduler(
     isar: isar,
@@ -51,6 +78,10 @@ final hybridSchedulerProvider = Provider<HybridScheduler>((ref) {
     scheduledTaskRepository: scheduledTaskRepo,
     ruleBasedScheduler: ruleBasedScheduler,
     mlPredictor: mlPredictor,
+    profileBasedScheduler: profileBasedScheduler,
+    dynamicTimeWindowService: dynamicTimeWindowService,
+    habitMetricsRepository: habitMetricsRepo,
+    userProfileRepository: userProfileRepo,
   );
 });
 

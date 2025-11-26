@@ -5,11 +5,18 @@ import '../../data/models/scheduled_task.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../data/repositories/one_time_task_repository.dart';
 import '../../data/repositories/scheduled_task_repository.dart';
+import '../../data/repositories/habit_metrics_repository.dart';
+import '../../data/repositories/user_profile_repository.dart';
 import 'rule_based_scheduler.dart';
 import 'ml_predictor.dart';
+import 'profile_based_scheduler.dart';
+import 'dynamic_time_window_service.dart';
 
-/// Hybrid scheduler that combines rule-based and ML-based scheduling
-/// Uses ML predictions when available, falls back to rules otherwise
+/// Three-tier hybrid scheduler with habit formation overlay
+/// Tier 1: ML-based (if ≥10 data points, ≥60% confidence)
+/// Tier 2: Profile-based (if onboarding completed)  
+/// Tier 3: Rule-based (fallback)
+/// Overlay: Habit formation (sticky times, streak protection)
 class HybridScheduler {
   final Isar isar;
   final GoalRepository goalRepository;
@@ -17,9 +24,20 @@ class HybridScheduler {
   final ScheduledTaskRepository scheduledTaskRepository;
   final RuleBasedScheduler ruleBasedScheduler;
   final MLPredictor mlPredictor;
+  
+  // New for v2
+  final ProfileBasedScheduler? profileBasedScheduler;
+  final DynamicTimeWindowService? dynamicTimeWindowService;
+  final HabitMetricsRepository? habitMetricsRepository;
+  final UserProfileRepository? userProfileRepository;
 
   // Confidence threshold for using ML predictions
   static const double minMLConfidence = 0.6;
+  
+  // Streak thresholds for habit protection
+  static const int streakProtectionThreshold = 14; // Protect streaks 14+ days
+  static const int habitLockThreshold = 21; // Lock in time after 21 days
+  static const double highConsistencyThreshold = 0.7; // 70% consistency
 
   HybridScheduler({
     required this.isar,
@@ -28,7 +46,20 @@ class HybridScheduler {
     required this.scheduledTaskRepository,
     required this.ruleBasedScheduler,
     required this.mlPredictor,
+    this.profileBasedScheduler,
+    this.dynamicTimeWindowService,
+    this.habitMetricsRepository,
+    this.userProfileRepository,
   });
+
+  /// Check if profile-based scheduling is available
+  Future<bool> _isProfileAvailable() async {
+    if (profileBasedScheduler == null || userProfileRepository == null) {
+      return false;
+    }
+    final profile = await userProfileRepository!.getProfile();
+    return profile?.onboardingCompleted ?? false;
+  }
 
   /// Main scheduling method - intelligently uses ML or rules
   Future<List<ScheduledTask>> scheduleForDate(DateTime date) async {
@@ -86,23 +117,39 @@ class HybridScheduler {
     print(
       '\n   ✨ Successfully scheduled ${scheduledTasks.length}/${goals.length} goals',
     );
-    print(
-      '   📊 ML: ${scheduledTasks.where((t) => t.schedulingMethod == 'ml-based').length}, Rules: ${scheduledTasks.where((t) => t.schedulingMethod == 'rule-based').length}\n',
-    );
+    final mlCount = scheduledTasks.where((t) => t.schedulingMethod == 'ml-based').length;
+    final profileCount = scheduledTasks.where((t) => t.schedulingMethod == 'profile-based').length;
+    final ruleCount = scheduledTasks.where((t) => t.schedulingMethod == 'rule-based').length;
+    final habitCount = scheduledTasks.where((t) => t.schedulingMethod == 'habit-locked').length;
+    print('   📊 ML: $mlCount, Profile: $profileCount, Rules: $ruleCount, Habit-locked: $habitCount\n');
 
     return scheduledTasks;
   }
 
-  /// Schedule a goal using hybrid approach (ML + rules)
+  /// Schedule a goal using three-tier hybrid approach with habit overlay
+  /// Tier 1: ML-based (if ≥10 data, ≥60% confidence)
+  /// Tier 2: Profile-based (if onboarding completed)
+  /// Tier 3: Rule-based (fallback)
+  /// Overlay: Habit formation (sticky times for consistent goals)
   Future<ScheduledTask?> _scheduleGoalHybrid({
     required Goal goal,
     required DateTime date,
     required List<TimeSlot> availableSlots,
     required List<TimeSlot> usedSlots,
   }) async {
-    // Check if ML has enough data for this goal
-    final hasMLData = await mlPredictor.hasEnoughData(goal.id);
+    // Check habit formation overlay first (21+ day streaks get locked times)
+    final habitTask = await _tryHabitLockedScheduling(
+      goal: goal,
+      date: date,
+      availableSlots: availableSlots,
+      usedSlots: usedSlots,
+    );
+    if (habitTask != null) {
+      return habitTask;
+    }
 
+    // Tier 1: Try ML-based scheduling
+    final hasMLData = await mlPredictor.hasEnoughData(goal.id);
     if (hasMLData) {
       print('      🧠 Trying ML-based scheduling...');
       final mlTask = await _scheduleWithML(
@@ -111,24 +158,170 @@ class HybridScheduler {
         availableSlots: availableSlots,
         usedSlots: usedSlots,
       );
-
       if (mlTask != null) {
         return mlTask;
       }
-      print('      ⚠️  ML failed, falling back to rules');
+      print('      ⚠️  ML failed, trying profile-based...');
     } else {
-      print(
-        '      📊 Insufficient data (need ${mlPredictor.minDataPoints}+), using rules',
-      );
+      print('      📊 Insufficient ML data (need ${mlPredictor.minDataPoints}+)');
     }
 
-    // Fall back to rule-based scheduling
+    // Tier 2: Try Profile-based scheduling
+    if (await _isProfileAvailable()) {
+      print('      👤 Trying profile-based scheduling...');
+      final profileTask = await _scheduleWithProfile(
+        goal: goal,
+        date: date,
+        availableSlots: availableSlots,
+        usedSlots: usedSlots,
+      );
+      if (profileTask != null) {
+        return profileTask;
+      }
+      print('      ⚠️  Profile-based failed, falling back to rules');
+    }
+
+    // Tier 3: Fall back to rule-based scheduling
+    print('      📋 Using rule-based scheduling...');
     return _scheduleWithRules(
       goal: goal,
       date: date,
       availableSlots: availableSlots,
       usedSlots: usedSlots,
     );
+  }
+
+  /// Try to schedule using habit-locked time (for established habits)
+  Future<ScheduledTask?> _tryHabitLockedScheduling({
+    required Goal goal,
+    required DateTime date,
+    required List<TimeSlot> availableSlots,
+    required List<TimeSlot> usedSlots,
+  }) async {
+    if (habitMetricsRepository == null) return null;
+
+    final metrics = await habitMetricsRepository!.getMetricsForGoal(goal.id);
+    if (metrics == null) return null;
+
+    // Check if this goal qualifies for habit locking
+    final hasEstablishedHabit = metrics.currentStreak >= habitLockThreshold &&
+        metrics.timeConsistency >= highConsistencyThreshold &&
+        metrics.stickyHour != null;
+
+    if (!hasEstablishedHabit) return null;
+
+    print('      🔒 Goal has established habit (${metrics.currentStreak} day streak)');
+    print('         Sticky hour: ${metrics.stickyHour}:00, consistency: ${(metrics.timeConsistency * 100).toInt()}%');
+
+    // Try to schedule at the sticky hour
+    final stickyHour = metrics.stickyHour!;
+    final freeSlots = ruleBasedScheduler.getFreeSlots(availableSlots, usedSlots);
+
+    for (final slot in freeSlots) {
+      if (slot.start.hour == stickyHour &&
+          slot.canFit(goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes)) {
+        print('      ✅ Locked to sticky hour ${stickyHour}:00');
+        return _createScheduledTask(
+          goal: goal,
+          date: date,
+          slot: slot,
+          method: 'habit-locked',
+          mlConfidence: null,
+        );
+      }
+    }
+
+    // Sticky hour not available, try adjacent hours
+    for (final offset in [1, -1, 2, -2]) {
+      final tryHour = stickyHour + offset;
+      if (tryHour < 0 || tryHour > 23) continue;
+
+      for (final slot in freeSlots) {
+        if (slot.start.hour == tryHour &&
+            slot.canFit(goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes)) {
+          print('      ⚠️  Sticky hour unavailable, using ${tryHour}:00 (±${offset.abs()}h)');
+          return _createScheduledTask(
+            goal: goal,
+            date: date,
+            slot: slot,
+            method: 'habit-locked',
+            mlConfidence: null,
+          );
+        }
+      }
+    }
+
+    print('      ⚠️  Could not schedule near sticky hour');
+    return null;
+  }
+
+  /// Schedule using profile-based scoring
+  Future<ScheduledTask?> _scheduleWithProfile({
+    required Goal goal,
+    required DateTime date,
+    required List<TimeSlot> availableSlots,
+    required List<TimeSlot> usedSlots,
+  }) async {
+    if (profileBasedScheduler == null) return null;
+
+    final result = await profileBasedScheduler!.findBestSlotForGoal(
+      goal: goal,
+      date: date,
+      availableSlots: availableSlots,
+      usedSlots: usedSlots,
+    );
+
+    if (result == null) return null;
+
+    print('      📊 Profile score: ${result.score.toStringAsFixed(2)}');
+    
+    // Apply habit protection for at-risk streaks
+    final adjustedSlot = await _applyStreakProtection(
+      goal: goal,
+      slot: result.slot,
+      date: date,
+      availableSlots: availableSlots,
+      usedSlots: usedSlots,
+    );
+
+    return _createScheduledTask(
+      goal: goal,
+      date: date,
+      slot: adjustedSlot ?? result.slot,
+      method: 'profile-based',
+      mlConfidence: null,
+    );
+  }
+
+  /// Apply streak protection - prefer times that historically worked
+  Future<TimeSlot?> _applyStreakProtection({
+    required Goal goal,
+    required TimeSlot slot,
+    required DateTime date,
+    required List<TimeSlot> availableSlots,
+    required List<TimeSlot> usedSlots,
+  }) async {
+    if (habitMetricsRepository == null) return null;
+
+    final metrics = await habitMetricsRepository!.getMetricsForGoal(goal.id);
+    if (metrics == null) return null;
+
+    // Only apply protection for significant streaks
+    if (metrics.currentStreak < streakProtectionThreshold) return null;
+
+    // If we have a sticky hour that works, prefer it
+    if (metrics.stickyHour != null) {
+      final freeSlots = ruleBasedScheduler.getFreeSlots(availableSlots, usedSlots);
+      for (final freeSlot in freeSlots) {
+        if (freeSlot.start.hour == metrics.stickyHour &&
+            freeSlot.canFit(goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes)) {
+          print('      🔥 Protecting ${metrics.currentStreak}-day streak, using sticky hour');
+          return freeSlot;
+        }
+      }
+    }
+
+    return null;
   }
 
   /// Schedule using ML predictions
@@ -179,22 +372,13 @@ class HybridScheduler {
     );
 
     // Create scheduled task with ML metadata
-    return ScheduledTask()
-      ..goalId = goal.id
-      ..title = goal.title
-      ..scheduledDate = DateTime(date.year, date.month, date.day)
-      ..scheduledStartTime = bestSlot.start
-      ..originalScheduledTime = bestSlot.start
-      ..duration = goal.targetDuration
-      ..colorHex = goal.colorHex
-      ..iconName = goal.iconName
-      ..schedulingMethod = 'ml-based'
-      ..mlConfidence = bestPrediction.confidence
-      ..isCompleted = false
-      ..wasRescheduled = false
-      ..rescheduleCount = 0
-      ..isAutoGenerated = true
-      ..createdAt = DateTime.now();
+    return _createScheduledTask(
+      goal: goal,
+      date: date,
+      slot: bestSlot,
+      method: 'ml-based',
+      mlConfidence: bestPrediction.confidence,
+    );
   }
 
   /// Schedule using rule-based approach
@@ -212,17 +396,34 @@ class HybridScheduler {
 
     if (bestSlot == null) return null;
 
+    return _createScheduledTask(
+      goal: goal,
+      date: date,
+      slot: bestSlot,
+      method: 'rule-based',
+      mlConfidence: null,
+    );
+  }
+
+  /// Create a scheduled task with common properties
+  ScheduledTask _createScheduledTask({
+    required Goal goal,
+    required DateTime date,
+    required TimeSlot slot,
+    required String method,
+    required double? mlConfidence,
+  }) {
     return ScheduledTask()
       ..goalId = goal.id
       ..title = goal.title
       ..scheduledDate = DateTime(date.year, date.month, date.day)
-      ..scheduledStartTime = bestSlot.start
-      ..originalScheduledTime = bestSlot.start
+      ..scheduledStartTime = slot.start
+      ..originalScheduledTime = slot.start
       ..duration = goal.targetDuration
       ..colorHex = goal.colorHex
       ..iconName = goal.iconName
-      ..schedulingMethod = 'rule-based'
-      ..mlConfidence = null
+      ..schedulingMethod = method
+      ..mlConfidence = mlConfidence
       ..isCompleted = false
       ..wasRescheduled = false
       ..rescheduleCount = 0
@@ -270,27 +471,58 @@ class HybridScheduler {
     return newTasks;
   }
 
-  /// Get scheduling statistics with ML insights
+  /// Get scheduling statistics with three-tier insights
   Future<Map<String, dynamic>> getSchedulingStats(DateTime date) async {
     final goals = await _getActiveGoalsForDate(date);
 
     // Count how many goals have ML data
     int goalsWithMLData = 0;
+    int goalsWithEstablishedHabits = 0;
+    
     for (final goal in goals) {
       if (await mlPredictor.hasEnoughData(goal.id)) {
         goalsWithMLData++;
       }
+      
+      if (habitMetricsRepository != null) {
+        final metrics = await habitMetricsRepository!.getMetricsForGoal(goal.id);
+        if (metrics != null && 
+            metrics.currentStreak >= habitLockThreshold &&
+            metrics.timeConsistency >= highConsistencyThreshold) {
+          goalsWithEstablishedHabits++;
+        }
+      }
     }
 
     final baseStats = await ruleBasedScheduler.getSchedulingStats(date);
+    final profileAvailable = await _isProfileAvailable();
+    
+    // Get dynamic window info if available
+    Map<String, dynamic>? dynamicWindowInfo;
+    if (dynamicTimeWindowService != null) {
+      final window = await dynamicTimeWindowService!.getTimeWindowForDate(date);
+      dynamicWindowInfo = {
+        'wake_hour': window.wakeHour,
+        'sleep_hour': window.sleepHour,
+        'optimal_start': window.optimalStartHour,
+        'optimal_end': window.optimalEndHour,
+        'is_learned': window.isLearned,
+      };
+    }
 
     return {
       ...baseStats,
+      'scheduler_version': 'v2-three-tier',
       'ml_predictor': mlPredictor.predictorName,
       'goals_with_ml_data': goalsWithMLData,
       'ml_coverage_percent': goals.isEmpty
           ? 0
           : (goalsWithMLData / goals.length * 100).round(),
+      'profile_available': profileAvailable,
+      'goals_with_established_habits': goalsWithEstablishedHabits,
+      'habit_lock_threshold_days': habitLockThreshold,
+      'streak_protection_threshold_days': streakProtectionThreshold,
+      'dynamic_window': dynamicWindowInfo,
     };
   }
 }

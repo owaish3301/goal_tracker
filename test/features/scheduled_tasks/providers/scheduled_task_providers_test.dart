@@ -10,6 +10,9 @@ import 'package:goal_tracker/data/models/task.dart';
 import 'package:goal_tracker/data/models/one_time_task.dart';
 import 'package:goal_tracker/data/models/scheduled_task.dart';
 import 'package:goal_tracker/data/models/productivity_data.dart';
+import 'package:goal_tracker/data/models/user_profile.dart';
+import 'package:goal_tracker/data/models/habit_metrics.dart';
+import 'package:goal_tracker/data/models/daily_activity_log.dart';
 import 'package:goal_tracker/data/repositories/goal_repository.dart';
 import 'package:goal_tracker/data/repositories/one_time_task_repository.dart';
 import 'package:goal_tracker/data/repositories/scheduled_task_repository.dart';
@@ -36,6 +39,9 @@ void main() {
         OneTimeTaskSchema,
         ScheduledTaskSchema,
         ProductivityDataSchema,
+        UserProfileSchema,
+        HabitMetricsSchema,
+        DailyActivityLogSchema,
       ],
       directory: '',
       name: 'test_providers_${DateTime.now().millisecondsSinceEpoch}',
