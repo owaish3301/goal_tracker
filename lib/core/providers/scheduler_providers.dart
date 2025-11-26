@@ -3,6 +3,7 @@ import '../services/database_service.dart';
 import '../services/rule_based_scheduler.dart';
 import '../services/pattern_based_ml_service.dart';
 import '../services/hybrid_scheduler.dart';
+import 'productivity_providers.dart';
 
 /// Provider for the rule-based scheduler
 final ruleBasedSchedulerProvider = Provider<RuleBasedScheduler>((ref) {
@@ -23,10 +24,14 @@ final ruleBasedSchedulerProvider = Provider<RuleBasedScheduler>((ref) {
 final patternBasedMLServiceProvider = Provider<PatternBasedMLService>((ref) {
   final isar = ref.watch(isarProvider);
   final productivityDataRepo = ref.watch(productivityDataRepositoryProvider);
+  final dailyActivityService = ref.watch(dailyActivityServiceProvider);
+  final habitMetricsRepo = ref.watch(habitMetricsRepositoryProvider);
 
   return PatternBasedMLService(
     isar: isar,
     productivityDataRepository: productivityDataRepo,
+    dailyActivityService: dailyActivityService,
+    habitMetricsRepository: habitMetricsRepo,
   );
 });
 

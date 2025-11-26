@@ -22,88 +22,143 @@ const ProductivityDataSchema = CollectionSchema(
       name: r'actualDurationMinutes',
       type: IsarType.long,
     ),
-    r'dayOfWeek': PropertySchema(
+    r'completionRateLast7Days': PropertySchema(
       id: 1,
+      name: r'completionRateLast7Days',
+      type: IsarType.double,
+    ),
+    r'consecutiveTasksCompleted': PropertySchema(
+      id: 2,
+      name: r'consecutiveTasksCompleted',
+      type: IsarType.long,
+    ),
+    r'currentStreakAtCompletion': PropertySchema(
+      id: 3,
+      name: r'currentStreakAtCompletion',
+      type: IsarType.long,
+    ),
+    r'dayOfWeek': PropertySchema(
+      id: 4,
       name: r'dayOfWeek',
       type: IsarType.long,
     ),
     r'duration': PropertySchema(
-      id: 2,
+      id: 5,
       name: r'duration',
       type: IsarType.long,
     ),
+    r'goalConsistencyScore': PropertySchema(
+      id: 6,
+      name: r'goalConsistencyScore',
+      type: IsarType.double,
+    ),
     r'goalId': PropertySchema(
-      id: 3,
+      id: 7,
       name: r'goalId',
       type: IsarType.long,
     ),
     r'hadFollowingTask': PropertySchema(
-      id: 4,
+      id: 8,
       name: r'hadFollowingTask',
       type: IsarType.bool,
     ),
     r'hadPriorTask': PropertySchema(
-      id: 5,
+      id: 9,
       name: r'hadPriorTask',
       type: IsarType.bool,
     ),
     r'hourOfDay': PropertySchema(
-      id: 6,
+      id: 10,
       name: r'hourOfDay',
       type: IsarType.long,
     ),
     r'isWeekend': PropertySchema(
-      id: 7,
+      id: 11,
       name: r'isWeekend',
       type: IsarType.bool,
     ),
     r'minutesFromScheduled': PropertySchema(
-      id: 8,
+      id: 12,
       name: r'minutesFromScheduled',
       type: IsarType.long,
     ),
+    r'minutesSinceFirstActivity': PropertySchema(
+      id: 13,
+      name: r'minutesSinceFirstActivity',
+      type: IsarType.long,
+    ),
+    r'minutesSinceLastCompletion': PropertySchema(
+      id: 14,
+      name: r'minutesSinceLastCompletion',
+      type: IsarType.long,
+    ),
     r'predictedScore': PropertySchema(
-      id: 9,
+      id: 15,
       name: r'predictedScore',
       type: IsarType.double,
     ),
     r'predictionError': PropertySchema(
-      id: 10,
+      id: 16,
       name: r'predictionError',
       type: IsarType.double,
     ),
+    r'previousTaskRating': PropertySchema(
+      id: 17,
+      name: r'previousTaskRating',
+      type: IsarType.double,
+    ),
     r'productivityScore': PropertySchema(
-      id: 11,
+      id: 18,
       name: r'productivityScore',
       type: IsarType.double,
     ),
     r'recordedAt': PropertySchema(
-      id: 12,
+      id: 19,
       name: r'recordedAt',
       type: IsarType.dateTime,
     ),
+    r'relativeTimeInDay': PropertySchema(
+      id: 20,
+      name: r'relativeTimeInDay',
+      type: IsarType.double,
+    ),
     r'scheduledTaskId': PropertySchema(
-      id: 13,
+      id: 21,
       name: r'scheduledTaskId',
       type: IsarType.long,
     ),
+    r'taskOrderInDay': PropertySchema(
+      id: 22,
+      name: r'taskOrderInDay',
+      type: IsarType.long,
+    ),
+    r'tasksCompletedBeforeThis': PropertySchema(
+      id: 23,
+      name: r'tasksCompletedBeforeThis',
+      type: IsarType.long,
+    ),
     r'timeSlotType': PropertySchema(
-      id: 14,
+      id: 24,
       name: r'timeSlotType',
       type: IsarType.long,
     ),
+    r'totalTasksScheduledToday': PropertySchema(
+      id: 25,
+      name: r'totalTasksScheduledToday',
+      type: IsarType.long,
+    ),
     r'wasCompleted': PropertySchema(
-      id: 15,
+      id: 26,
       name: r'wasCompleted',
       type: IsarType.bool,
     ),
     r'wasRescheduled': PropertySchema(
-      id: 16,
+      id: 27,
       name: r'wasRescheduled',
       type: IsarType.bool,
     ),
     r'weekOfYear': PropertySchema(
-      id: 17,
+      id: 28,
       name: r'weekOfYear',
       type: IsarType.long,
     )
@@ -175,23 +230,34 @@ void _productivityDataSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.actualDurationMinutes);
-  writer.writeLong(offsets[1], object.dayOfWeek);
-  writer.writeLong(offsets[2], object.duration);
-  writer.writeLong(offsets[3], object.goalId);
-  writer.writeBool(offsets[4], object.hadFollowingTask);
-  writer.writeBool(offsets[5], object.hadPriorTask);
-  writer.writeLong(offsets[6], object.hourOfDay);
-  writer.writeBool(offsets[7], object.isWeekend);
-  writer.writeLong(offsets[8], object.minutesFromScheduled);
-  writer.writeDouble(offsets[9], object.predictedScore);
-  writer.writeDouble(offsets[10], object.predictionError);
-  writer.writeDouble(offsets[11], object.productivityScore);
-  writer.writeDateTime(offsets[12], object.recordedAt);
-  writer.writeLong(offsets[13], object.scheduledTaskId);
-  writer.writeLong(offsets[14], object.timeSlotType);
-  writer.writeBool(offsets[15], object.wasCompleted);
-  writer.writeBool(offsets[16], object.wasRescheduled);
-  writer.writeLong(offsets[17], object.weekOfYear);
+  writer.writeDouble(offsets[1], object.completionRateLast7Days);
+  writer.writeLong(offsets[2], object.consecutiveTasksCompleted);
+  writer.writeLong(offsets[3], object.currentStreakAtCompletion);
+  writer.writeLong(offsets[4], object.dayOfWeek);
+  writer.writeLong(offsets[5], object.duration);
+  writer.writeDouble(offsets[6], object.goalConsistencyScore);
+  writer.writeLong(offsets[7], object.goalId);
+  writer.writeBool(offsets[8], object.hadFollowingTask);
+  writer.writeBool(offsets[9], object.hadPriorTask);
+  writer.writeLong(offsets[10], object.hourOfDay);
+  writer.writeBool(offsets[11], object.isWeekend);
+  writer.writeLong(offsets[12], object.minutesFromScheduled);
+  writer.writeLong(offsets[13], object.minutesSinceFirstActivity);
+  writer.writeLong(offsets[14], object.minutesSinceLastCompletion);
+  writer.writeDouble(offsets[15], object.predictedScore);
+  writer.writeDouble(offsets[16], object.predictionError);
+  writer.writeDouble(offsets[17], object.previousTaskRating);
+  writer.writeDouble(offsets[18], object.productivityScore);
+  writer.writeDateTime(offsets[19], object.recordedAt);
+  writer.writeDouble(offsets[20], object.relativeTimeInDay);
+  writer.writeLong(offsets[21], object.scheduledTaskId);
+  writer.writeLong(offsets[22], object.taskOrderInDay);
+  writer.writeLong(offsets[23], object.tasksCompletedBeforeThis);
+  writer.writeLong(offsets[24], object.timeSlotType);
+  writer.writeLong(offsets[25], object.totalTasksScheduledToday);
+  writer.writeBool(offsets[26], object.wasCompleted);
+  writer.writeBool(offsets[27], object.wasRescheduled);
+  writer.writeLong(offsets[28], object.weekOfYear);
 }
 
 ProductivityData _productivityDataDeserialize(
@@ -202,24 +268,35 @@ ProductivityData _productivityDataDeserialize(
 ) {
   final object = ProductivityData();
   object.actualDurationMinutes = reader.readLong(offsets[0]);
-  object.dayOfWeek = reader.readLong(offsets[1]);
-  object.duration = reader.readLong(offsets[2]);
-  object.goalId = reader.readLong(offsets[3]);
-  object.hadFollowingTask = reader.readBool(offsets[4]);
-  object.hadPriorTask = reader.readBool(offsets[5]);
-  object.hourOfDay = reader.readLong(offsets[6]);
+  object.completionRateLast7Days = reader.readDouble(offsets[1]);
+  object.consecutiveTasksCompleted = reader.readLong(offsets[2]);
+  object.currentStreakAtCompletion = reader.readLong(offsets[3]);
+  object.dayOfWeek = reader.readLong(offsets[4]);
+  object.duration = reader.readLong(offsets[5]);
+  object.goalConsistencyScore = reader.readDouble(offsets[6]);
+  object.goalId = reader.readLong(offsets[7]);
+  object.hadFollowingTask = reader.readBool(offsets[8]);
+  object.hadPriorTask = reader.readBool(offsets[9]);
+  object.hourOfDay = reader.readLong(offsets[10]);
   object.id = id;
-  object.isWeekend = reader.readBool(offsets[7]);
-  object.minutesFromScheduled = reader.readLong(offsets[8]);
-  object.predictedScore = reader.readDoubleOrNull(offsets[9]);
-  object.predictionError = reader.readDoubleOrNull(offsets[10]);
-  object.productivityScore = reader.readDouble(offsets[11]);
-  object.recordedAt = reader.readDateTime(offsets[12]);
-  object.scheduledTaskId = reader.readLong(offsets[13]);
-  object.timeSlotType = reader.readLong(offsets[14]);
-  object.wasCompleted = reader.readBool(offsets[15]);
-  object.wasRescheduled = reader.readBool(offsets[16]);
-  object.weekOfYear = reader.readLong(offsets[17]);
+  object.isWeekend = reader.readBool(offsets[11]);
+  object.minutesFromScheduled = reader.readLong(offsets[12]);
+  object.minutesSinceFirstActivity = reader.readLong(offsets[13]);
+  object.minutesSinceLastCompletion = reader.readLong(offsets[14]);
+  object.predictedScore = reader.readDoubleOrNull(offsets[15]);
+  object.predictionError = reader.readDoubleOrNull(offsets[16]);
+  object.previousTaskRating = reader.readDouble(offsets[17]);
+  object.productivityScore = reader.readDouble(offsets[18]);
+  object.recordedAt = reader.readDateTime(offsets[19]);
+  object.relativeTimeInDay = reader.readDouble(offsets[20]);
+  object.scheduledTaskId = reader.readLong(offsets[21]);
+  object.taskOrderInDay = reader.readLong(offsets[22]);
+  object.tasksCompletedBeforeThis = reader.readLong(offsets[23]);
+  object.timeSlotType = reader.readLong(offsets[24]);
+  object.totalTasksScheduledToday = reader.readLong(offsets[25]);
+  object.wasCompleted = reader.readBool(offsets[26]);
+  object.wasRescheduled = reader.readBool(offsets[27]);
+  object.weekOfYear = reader.readLong(offsets[28]);
   return object;
 }
 
@@ -233,38 +310,60 @@ P _productivityDataDeserializeProp<P>(
     case 0:
       return (reader.readLong(offset)) as P;
     case 1:
-      return (reader.readLong(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 2:
       return (reader.readLong(offset)) as P;
     case 3:
       return (reader.readLong(offset)) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 6:
-      return (reader.readLong(offset)) as P;
-    case 7:
-      return (reader.readBool(offset)) as P;
-    case 8:
-      return (reader.readLong(offset)) as P;
-    case 9:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 10:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 11:
       return (reader.readDouble(offset)) as P;
+    case 7:
+      return (reader.readLong(offset)) as P;
+    case 8:
+      return (reader.readBool(offset)) as P;
+    case 9:
+      return (reader.readBool(offset)) as P;
+    case 10:
+      return (reader.readLong(offset)) as P;
+    case 11:
+      return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 13:
       return (reader.readLong(offset)) as P;
     case 14:
       return (reader.readLong(offset)) as P;
     case 15:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 16:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 17:
+      return (reader.readDouble(offset)) as P;
+    case 18:
+      return (reader.readDouble(offset)) as P;
+    case 19:
+      return (reader.readDateTime(offset)) as P;
+    case 20:
+      return (reader.readDouble(offset)) as P;
+    case 21:
+      return (reader.readLong(offset)) as P;
+    case 22:
+      return (reader.readLong(offset)) as P;
+    case 23:
+      return (reader.readLong(offset)) as P;
+    case 24:
+      return (reader.readLong(offset)) as P;
+    case 25:
+      return (reader.readLong(offset)) as P;
+    case 26:
+      return (reader.readBool(offset)) as P;
+    case 27:
+      return (reader.readBool(offset)) as P;
+    case 28:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -823,6 +922,184 @@ extension ProductivityDataQueryFilter
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      completionRateLast7DaysEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'completionRateLast7Days',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      completionRateLast7DaysGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'completionRateLast7Days',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      completionRateLast7DaysLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'completionRateLast7Days',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      completionRateLast7DaysBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'completionRateLast7Days',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      consecutiveTasksCompletedEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'consecutiveTasksCompleted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      consecutiveTasksCompletedGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'consecutiveTasksCompleted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      consecutiveTasksCompletedLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'consecutiveTasksCompleted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      consecutiveTasksCompletedBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'consecutiveTasksCompleted',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      currentStreakAtCompletionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currentStreakAtCompletion',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      currentStreakAtCompletionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'currentStreakAtCompletion',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      currentStreakAtCompletionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'currentStreakAtCompletion',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      currentStreakAtCompletionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'currentStreakAtCompletion',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
       dayOfWeekEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -930,6 +1207,72 @@ extension ProductivityDataQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      goalConsistencyScoreEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'goalConsistencyScore',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      goalConsistencyScoreGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'goalConsistencyScore',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      goalConsistencyScoreLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'goalConsistencyScore',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      goalConsistencyScoreBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'goalConsistencyScore',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
       ));
     });
   }
@@ -1189,6 +1532,118 @@ extension ProductivityDataQueryFilter
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      minutesSinceFirstActivityEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'minutesSinceFirstActivity',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      minutesSinceFirstActivityGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'minutesSinceFirstActivity',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      minutesSinceFirstActivityLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'minutesSinceFirstActivity',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      minutesSinceFirstActivityBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'minutesSinceFirstActivity',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      minutesSinceLastCompletionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'minutesSinceLastCompletion',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      minutesSinceLastCompletionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'minutesSinceLastCompletion',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      minutesSinceLastCompletionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'minutesSinceLastCompletion',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      minutesSinceLastCompletionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'minutesSinceLastCompletion',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
       predictedScoreIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1357,6 +1812,72 @@ extension ProductivityDataQueryFilter
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      previousTaskRatingEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'previousTaskRating',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      previousTaskRatingGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'previousTaskRating',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      previousTaskRatingLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'previousTaskRating',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      previousTaskRatingBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'previousTaskRating',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
       productivityScoreEqualTo(
     double value, {
     double epsilon = Query.epsilon,
@@ -1479,6 +2000,72 @@ extension ProductivityDataQueryFilter
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      relativeTimeInDayEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'relativeTimeInDay',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      relativeTimeInDayGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'relativeTimeInDay',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      relativeTimeInDayLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'relativeTimeInDay',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      relativeTimeInDayBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'relativeTimeInDay',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
       scheduledTaskIdEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1535,6 +2122,118 @@ extension ProductivityDataQueryFilter
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      taskOrderInDayEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'taskOrderInDay',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      taskOrderInDayGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'taskOrderInDay',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      taskOrderInDayLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'taskOrderInDay',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      taskOrderInDayBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'taskOrderInDay',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      tasksCompletedBeforeThisEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'tasksCompletedBeforeThis',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      tasksCompletedBeforeThisGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'tasksCompletedBeforeThis',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      tasksCompletedBeforeThisLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'tasksCompletedBeforeThis',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      tasksCompletedBeforeThisBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'tasksCompletedBeforeThis',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
       timeSlotTypeEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1582,6 +2281,62 @@ extension ProductivityDataQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'timeSlotType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      totalTasksScheduledTodayEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'totalTasksScheduledToday',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      totalTasksScheduledTodayGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'totalTasksScheduledToday',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      totalTasksScheduledTodayLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'totalTasksScheduledToday',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterFilterCondition>
+      totalTasksScheduledTodayBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'totalTasksScheduledToday',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1690,6 +2445,48 @@ extension ProductivityDataQuerySortBy
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByCompletionRateLast7Days() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'completionRateLast7Days', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByCompletionRateLast7DaysDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'completionRateLast7Days', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByConsecutiveTasksCompleted() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'consecutiveTasksCompleted', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByConsecutiveTasksCompletedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'consecutiveTasksCompleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByCurrentStreakAtCompletion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentStreakAtCompletion', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByCurrentStreakAtCompletionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentStreakAtCompletion', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
       sortByDayOfWeek() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dayOfWeek', Sort.asc);
@@ -1714,6 +2511,20 @@ extension ProductivityDataQuerySortBy
       sortByDurationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'duration', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByGoalConsistencyScore() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'goalConsistencyScore', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByGoalConsistencyScoreDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'goalConsistencyScore', Sort.desc);
     });
   }
 
@@ -1802,6 +2613,34 @@ extension ProductivityDataQuerySortBy
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByMinutesSinceFirstActivity() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'minutesSinceFirstActivity', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByMinutesSinceFirstActivityDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'minutesSinceFirstActivity', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByMinutesSinceLastCompletion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'minutesSinceLastCompletion', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByMinutesSinceLastCompletionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'minutesSinceLastCompletion', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
       sortByPredictedScore() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'predictedScore', Sort.asc);
@@ -1826,6 +2665,20 @@ extension ProductivityDataQuerySortBy
       sortByPredictionErrorDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'predictionError', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByPreviousTaskRating() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'previousTaskRating', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByPreviousTaskRatingDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'previousTaskRating', Sort.desc);
     });
   }
 
@@ -1858,6 +2711,20 @@ extension ProductivityDataQuerySortBy
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByRelativeTimeInDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'relativeTimeInDay', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByRelativeTimeInDayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'relativeTimeInDay', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
       sortByScheduledTaskId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'scheduledTaskId', Sort.asc);
@@ -1872,6 +2739,34 @@ extension ProductivityDataQuerySortBy
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByTaskOrderInDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'taskOrderInDay', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByTaskOrderInDayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'taskOrderInDay', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByTasksCompletedBeforeThis() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tasksCompletedBeforeThis', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByTasksCompletedBeforeThisDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tasksCompletedBeforeThis', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
       sortByTimeSlotType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'timeSlotType', Sort.asc);
@@ -1882,6 +2777,20 @@ extension ProductivityDataQuerySortBy
       sortByTimeSlotTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'timeSlotType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByTotalTasksScheduledToday() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalTasksScheduledToday', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      sortByTotalTasksScheduledTodayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalTasksScheduledToday', Sort.desc);
     });
   }
 
@@ -1945,6 +2854,48 @@ extension ProductivityDataQuerySortThenBy
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByCompletionRateLast7Days() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'completionRateLast7Days', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByCompletionRateLast7DaysDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'completionRateLast7Days', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByConsecutiveTasksCompleted() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'consecutiveTasksCompleted', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByConsecutiveTasksCompletedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'consecutiveTasksCompleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByCurrentStreakAtCompletion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentStreakAtCompletion', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByCurrentStreakAtCompletionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentStreakAtCompletion', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
       thenByDayOfWeek() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dayOfWeek', Sort.asc);
@@ -1969,6 +2920,20 @@ extension ProductivityDataQuerySortThenBy
       thenByDurationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'duration', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByGoalConsistencyScore() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'goalConsistencyScore', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByGoalConsistencyScoreDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'goalConsistencyScore', Sort.desc);
     });
   }
 
@@ -2070,6 +3035,34 @@ extension ProductivityDataQuerySortThenBy
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByMinutesSinceFirstActivity() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'minutesSinceFirstActivity', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByMinutesSinceFirstActivityDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'minutesSinceFirstActivity', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByMinutesSinceLastCompletion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'minutesSinceLastCompletion', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByMinutesSinceLastCompletionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'minutesSinceLastCompletion', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
       thenByPredictedScore() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'predictedScore', Sort.asc);
@@ -2094,6 +3087,20 @@ extension ProductivityDataQuerySortThenBy
       thenByPredictionErrorDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'predictionError', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByPreviousTaskRating() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'previousTaskRating', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByPreviousTaskRatingDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'previousTaskRating', Sort.desc);
     });
   }
 
@@ -2126,6 +3133,20 @@ extension ProductivityDataQuerySortThenBy
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByRelativeTimeInDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'relativeTimeInDay', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByRelativeTimeInDayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'relativeTimeInDay', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
       thenByScheduledTaskId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'scheduledTaskId', Sort.asc);
@@ -2140,6 +3161,34 @@ extension ProductivityDataQuerySortThenBy
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByTaskOrderInDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'taskOrderInDay', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByTaskOrderInDayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'taskOrderInDay', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByTasksCompletedBeforeThis() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tasksCompletedBeforeThis', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByTasksCompletedBeforeThisDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tasksCompletedBeforeThis', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
       thenByTimeSlotType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'timeSlotType', Sort.asc);
@@ -2150,6 +3199,20 @@ extension ProductivityDataQuerySortThenBy
       thenByTimeSlotTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'timeSlotType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByTotalTasksScheduledToday() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalTasksScheduledToday', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QAfterSortBy>
+      thenByTotalTasksScheduledTodayDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalTasksScheduledToday', Sort.desc);
     });
   }
 
@@ -2206,6 +3269,27 @@ extension ProductivityDataQueryWhereDistinct
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByCompletionRateLast7Days() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'completionRateLast7Days');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByConsecutiveTasksCompleted() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'consecutiveTasksCompleted');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByCurrentStreakAtCompletion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'currentStreakAtCompletion');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
       distinctByDayOfWeek() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'dayOfWeek');
@@ -2216,6 +3300,13 @@ extension ProductivityDataQueryWhereDistinct
       distinctByDuration() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'duration');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByGoalConsistencyScore() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'goalConsistencyScore');
     });
   }
 
@@ -2262,6 +3353,20 @@ extension ProductivityDataQueryWhereDistinct
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByMinutesSinceFirstActivity() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'minutesSinceFirstActivity');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByMinutesSinceLastCompletion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'minutesSinceLastCompletion');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
       distinctByPredictedScore() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'predictedScore');
@@ -2272,6 +3377,13 @@ extension ProductivityDataQueryWhereDistinct
       distinctByPredictionError() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'predictionError');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByPreviousTaskRating() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'previousTaskRating');
     });
   }
 
@@ -2290,6 +3402,13 @@ extension ProductivityDataQueryWhereDistinct
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByRelativeTimeInDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'relativeTimeInDay');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
       distinctByScheduledTaskId() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'scheduledTaskId');
@@ -2297,9 +3416,30 @@ extension ProductivityDataQueryWhereDistinct
   }
 
   QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByTaskOrderInDay() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'taskOrderInDay');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByTasksCompletedBeforeThis() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'tasksCompletedBeforeThis');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
       distinctByTimeSlotType() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'timeSlotType');
+    });
+  }
+
+  QueryBuilder<ProductivityData, ProductivityData, QDistinct>
+      distinctByTotalTasksScheduledToday() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'totalTasksScheduledToday');
     });
   }
 
@@ -2340,6 +3480,27 @@ extension ProductivityDataQueryProperty
     });
   }
 
+  QueryBuilder<ProductivityData, double, QQueryOperations>
+      completionRateLast7DaysProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'completionRateLast7Days');
+    });
+  }
+
+  QueryBuilder<ProductivityData, int, QQueryOperations>
+      consecutiveTasksCompletedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'consecutiveTasksCompleted');
+    });
+  }
+
+  QueryBuilder<ProductivityData, int, QQueryOperations>
+      currentStreakAtCompletionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'currentStreakAtCompletion');
+    });
+  }
+
   QueryBuilder<ProductivityData, int, QQueryOperations> dayOfWeekProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'dayOfWeek');
@@ -2349,6 +3510,13 @@ extension ProductivityDataQueryProperty
   QueryBuilder<ProductivityData, int, QQueryOperations> durationProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'duration');
+    });
+  }
+
+  QueryBuilder<ProductivityData, double, QQueryOperations>
+      goalConsistencyScoreProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'goalConsistencyScore');
     });
   }
 
@@ -2391,6 +3559,20 @@ extension ProductivityDataQueryProperty
     });
   }
 
+  QueryBuilder<ProductivityData, int, QQueryOperations>
+      minutesSinceFirstActivityProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'minutesSinceFirstActivity');
+    });
+  }
+
+  QueryBuilder<ProductivityData, int, QQueryOperations>
+      minutesSinceLastCompletionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'minutesSinceLastCompletion');
+    });
+  }
+
   QueryBuilder<ProductivityData, double?, QQueryOperations>
       predictedScoreProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -2402,6 +3584,13 @@ extension ProductivityDataQueryProperty
       predictionErrorProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'predictionError');
+    });
+  }
+
+  QueryBuilder<ProductivityData, double, QQueryOperations>
+      previousTaskRatingProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'previousTaskRating');
     });
   }
 
@@ -2419,6 +3608,13 @@ extension ProductivityDataQueryProperty
     });
   }
 
+  QueryBuilder<ProductivityData, double, QQueryOperations>
+      relativeTimeInDayProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'relativeTimeInDay');
+    });
+  }
+
   QueryBuilder<ProductivityData, int, QQueryOperations>
       scheduledTaskIdProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -2426,9 +3622,30 @@ extension ProductivityDataQueryProperty
     });
   }
 
+  QueryBuilder<ProductivityData, int, QQueryOperations>
+      taskOrderInDayProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'taskOrderInDay');
+    });
+  }
+
+  QueryBuilder<ProductivityData, int, QQueryOperations>
+      tasksCompletedBeforeThisProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'tasksCompletedBeforeThis');
+    });
+  }
+
   QueryBuilder<ProductivityData, int, QQueryOperations> timeSlotTypeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'timeSlotType');
+    });
+  }
+
+  QueryBuilder<ProductivityData, int, QQueryOperations>
+      totalTasksScheduledTodayProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'totalTasksScheduledToday');
     });
   }
 

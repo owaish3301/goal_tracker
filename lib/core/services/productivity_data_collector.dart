@@ -3,7 +3,9 @@ import '../../data/models/scheduled_task.dart';
 import '../../data/models/productivity_data.dart';
 import '../../data/repositories/scheduled_task_repository.dart';
 import '../../data/repositories/productivity_data_repository.dart';
+import '../../data/repositories/habit_metrics_repository.dart';
 import 'habit_formation_service.dart';
+import 'daily_activity_service.dart';
 
 /// Service to collect productivity data for ML training
 class ProductivityDataCollector {
@@ -11,12 +13,20 @@ class ProductivityDataCollector {
   final ScheduledTaskRepository scheduledTaskRepository;
   final ProductivityDataRepository productivityDataRepository;
   final HabitFormationService? habitFormationService;
+  final DailyActivityService? dailyActivityService;
+  final HabitMetricsRepository? habitMetricsRepository;
+
+  // Track consecutive completions for momentum
+  int _consecutiveCompletions = 0;
+  DateTime? _lastCompletionTime;
 
   ProductivityDataCollector({
     required this.isar,
     required this.scheduledTaskRepository,
     required this.productivityDataRepository,
     this.habitFormationService,
+    this.dailyActivityService,
+    this.habitMetricsRepository,
   });
 
   /// Record task completion with productivity feedback
@@ -93,9 +103,48 @@ class ProductivityDataCollector {
     final isWeekend = dayOfWeek == 5 || dayOfWeek == 6; // Saturday or Sunday
 
     // Check if there were adjacent tasks (simplified for now)
-    // TODO: Implement proper adjacent task detection
     final hadPriorTask = false;
     final hadFollowingTask = false;
+
+    // === Phase 8: Capture contextual features ===
+    
+    // Get context from DailyActivityService
+    TaskCompletionContext? context;
+    double relativeTimeInDay = 0.5;
+    int minutesSinceFirstActivity = 0;
+    double previousTaskRating = 0.0;
+    
+    if (dailyActivityService != null) {
+      context = await dailyActivityService!.getTodayContext(actualStartTime);
+      relativeTimeInDay = await dailyActivityService!.calculateRelativeTimeInDay(actualStartTime);
+      minutesSinceFirstActivity = await dailyActivityService!.getMinutesSinceFirstActivity(actualStartTime);
+      previousTaskRating = await dailyActivityService!.getPreviousTaskRating(actualStartTime);
+      
+      // Record this activity
+      await dailyActivityService!.recordTaskCompletion(
+        completionTime: actualStartTime,
+        productivityRating: productivityRating,
+      );
+    }
+    
+    // Get habit metrics for the goal
+    int currentStreak = 0;
+    double goalConsistencyScore = 0.0;
+    
+    if (habitMetricsRepository != null) {
+      final metrics = await habitMetricsRepository!.getMetricsForGoal(task.goalId);
+      if (metrics != null) {
+        currentStreak = metrics.currentStreak;
+        goalConsistencyScore = metrics.consistencyScore;
+      }
+    }
+    
+    // Calculate momentum features
+    _consecutiveCompletions++;
+    final minutesSinceLastCompletion = _lastCompletionTime != null
+        ? actualStartTime.difference(_lastCompletionTime!).inMinutes.abs()
+        : 0;
+    _lastCompletionTime = actualStartTime;
 
     // Create the productivity data record
     final productivityData = ProductivityData()
@@ -114,7 +163,19 @@ class ProductivityDataCollector {
       ..actualDurationMinutes = actualDurationMinutes
       ..minutesFromScheduled = minutesFromScheduled
       ..scheduledTaskId = task.id
-      ..recordedAt = DateTime.now();
+      ..recordedAt = DateTime.now()
+      // Phase 8 contextual features
+      ..taskOrderInDay = context?.taskOrderInDay ?? 1
+      ..totalTasksScheduledToday = context?.totalTasksScheduledToday ?? 1
+      ..tasksCompletedBeforeThis = context?.tasksCompletedBeforeThis ?? 0
+      ..relativeTimeInDay = relativeTimeInDay
+      ..minutesSinceFirstActivity = minutesSinceFirstActivity
+      ..previousTaskRating = previousTaskRating
+      ..completionRateLast7Days = context?.completionRateLast7Days ?? 0.0
+      ..currentStreakAtCompletion = currentStreak
+      ..goalConsistencyScore = goalConsistencyScore
+      ..consecutiveTasksCompleted = _consecutiveCompletions
+      ..minutesSinceLastCompletion = minutesSinceLastCompletion;
 
     // If ML was used, store prediction info
     if (task.schedulingMethod == 'ml-based' && task.mlConfidence != null) {
@@ -126,6 +187,9 @@ class ProductivityDataCollector {
 
     print(
       '   📈 ML Data: goal=${task.goalId}, hour=$hourOfDay, day=$dayOfWeek, score=$productivityRating',
+    );
+    print(
+      '   📊 Context: order=${context?.taskOrderInDay}, streak=$currentStreak, momentum=${_consecutiveCompletions}',
     );
   }
 
@@ -165,12 +229,45 @@ class ProductivityDataCollector {
     print('⏭️  Recording skip for: ${task.title}');
 
     // Create productivity data with low score and wasCompleted = false
+    final now = DateTime.now();
     final scheduledTime = task.scheduledStartTime;
     final dayOfWeek = scheduledTime.weekday - 1;
     final hourOfDay = scheduledTime.hour;
     final timeSlotType = ProductivityData.calculateTimeSlotType(hourOfDay);
     final weekOfYear = _getWeekOfYear(scheduledTime);
     final isWeekend = dayOfWeek == 5 || dayOfWeek == 6;
+
+    // === Phase 8: Capture contextual features for skips too ===
+    TaskCompletionContext? context;
+    double relativeTimeInDay = 0.5;
+    int minutesSinceFirstActivity = 0;
+    double previousTaskRating = 0.0;
+    
+    if (dailyActivityService != null) {
+      context = await dailyActivityService!.getTodayContext(now);
+      relativeTimeInDay = await dailyActivityService!.calculateRelativeTimeInDay(now);
+      minutesSinceFirstActivity = await dailyActivityService!.getMinutesSinceFirstActivity(now);
+      previousTaskRating = await dailyActivityService!.getPreviousTaskRating(now);
+    }
+    
+    // Get habit metrics for the goal
+    int currentStreak = 0;
+    double goalConsistencyScore = 0.0;
+    
+    if (habitMetricsRepository != null) {
+      final metrics = await habitMetricsRepository!.getMetricsForGoal(task.goalId);
+      if (metrics != null) {
+        currentStreak = metrics.currentStreak;
+        goalConsistencyScore = metrics.consistencyScore;
+      }
+    }
+    
+    // Reset momentum on skip
+    final previousConsecutive = _consecutiveCompletions;
+    _consecutiveCompletions = 0;
+    final minutesSinceLastCompletion = _lastCompletionTime != null
+        ? now.difference(_lastCompletionTime!).inMinutes.abs()
+        : 0;
 
     final productivityData = ProductivityData()
       ..goalId = task.goalId
@@ -190,9 +287,23 @@ class ProductivityDataCollector {
       ..actualDurationMinutes = 0
       ..minutesFromScheduled = 0
       ..scheduledTaskId = task.id
-      ..recordedAt = DateTime.now();
+      ..recordedAt = now
+      // Phase 8 contextual features
+      ..taskOrderInDay = context?.taskOrderInDay ?? 1
+      ..totalTasksScheduledToday = context?.totalTasksScheduledToday ?? 1
+      ..tasksCompletedBeforeThis = context?.tasksCompletedBeforeThis ?? 0
+      ..relativeTimeInDay = relativeTimeInDay
+      ..minutesSinceFirstActivity = minutesSinceFirstActivity
+      ..previousTaskRating = previousTaskRating
+      ..completionRateLast7Days = context?.completionRateLast7Days ?? 0.0
+      ..currentStreakAtCompletion = currentStreak
+      ..goalConsistencyScore = goalConsistencyScore
+      ..consecutiveTasksCompleted = previousConsecutive  // Record the streak that was broken
+      ..minutesSinceLastCompletion = minutesSinceLastCompletion;
 
     await productivityDataRepository.createProductivityData(productivityData);
+    
+    print('   📈 Skip context: momentum=$previousConsecutive→0, streak=$currentStreak');
 
     // Update habit formation metrics (streak break)
     if (habitFormationService != null) {

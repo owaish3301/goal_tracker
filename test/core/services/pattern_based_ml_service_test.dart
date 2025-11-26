@@ -40,22 +40,24 @@ void main() {
     });
 
     test('hasEnoughData returns true with sufficient data', () async {
-      // Add 10 productivity data points
-      for (int i = 0; i < 10; i++) {
-        final data = ProductivityData()
-          ..goalId = 1
-          ..hourOfDay = 9 + (i % 3)
-          ..dayOfWeek = i % 7
-          ..duration = 30
-          ..productivityScore = 4.0 + (i % 2) * 0.5
-          ..wasRescheduled = false
-          ..wasCompleted = true
-          ..actualDurationMinutes = 30
-          ..minutesFromScheduled = 0
-          ..scheduledTaskId = i;
+      // Add 10 productivity data points in a single transaction
+      await isar.writeTxn(() async {
+        for (int i = 0; i < 10; i++) {
+          final data = ProductivityData()
+            ..goalId = 1
+            ..hourOfDay = 9 + (i % 3)
+            ..dayOfWeek = i % 7
+            ..duration = 30
+            ..productivityScore = 4.0 + (i % 2) * 0.5
+            ..wasRescheduled = false
+            ..wasCompleted = true
+            ..actualDurationMinutes = 30
+            ..minutesFromScheduled = 0
+            ..scheduledTaskId = i;
 
-        await repository.createProductivityData(data);
-      }
+          await isar.productivityDatas.put(data);
+        }
+      });
 
       final result = await mlService.hasEnoughData(1);
       expect(result, true);

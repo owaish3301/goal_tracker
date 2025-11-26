@@ -10,6 +10,7 @@ import '../../data/models/productivity_data.dart';
 import '../../data/models/app_settings.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/habit_metrics.dart';
+import '../../data/models/daily_activity_log.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../data/repositories/milestone_repository.dart';
 import '../../data/repositories/task_repository.dart';
@@ -19,6 +20,7 @@ import '../../data/repositories/productivity_data_repository.dart';
 import '../../data/repositories/app_settings_repository.dart';
 import '../../data/repositories/user_profile_repository.dart';
 import '../../data/repositories/habit_metrics_repository.dart';
+import '../../data/repositories/daily_activity_log_repository.dart';
 
 class DatabaseService {
   static Isar? _isar;
@@ -42,6 +44,7 @@ class DatabaseService {
         AppSettingsSchema,
         UserProfileSchema,
         HabitMetricsSchema,
+        DailyActivityLogSchema,
       ],
       directory: dir.path,
       name: 'goal_tracker',
@@ -124,4 +127,9 @@ final userProfileRepositoryProvider = Provider<UserProfileRepository>((ref) {
 final habitMetricsRepositoryProvider = Provider<HabitMetricsRepository>((ref) {
   final isar = ref.watch(isarProvider);
   return HabitMetricsRepository(isar);
+});
+
+final dailyActivityLogRepositoryProvider = Provider<DailyActivityLogRepository>((ref) {
+  final isar = ref.watch(isarProvider);
+  return DailyActivityLogRepository(isar);
 });
