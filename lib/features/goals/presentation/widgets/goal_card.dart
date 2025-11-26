@@ -2,17 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:goal_tracker/data/models/goal.dart';
 import 'package:goal_tracker/core/theme/app_colors.dart';
 import 'package:goal_tracker/core/constants/constants.dart';
+import 'package:goal_tracker/features/goals/presentation/widgets/streak_badge.dart';
 
 class GoalCard extends StatelessWidget {
   final Goal goal;
   final VoidCallback onTap;
   final VoidCallback? onDelete;
+  final int? currentStreak;
+  final bool isStreakAtRisk;
 
   const GoalCard({
     super.key,
     required this.goal,
     required this.onTap,
     this.onDelete,
+    this.currentStreak,
+    this.isStreakAtRisk = false,
   });
 
   // Cache color parsing - computed once per goal
@@ -47,12 +52,25 @@ class GoalCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        goal.title,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              goal.title,
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
                             ),
+                          ),
+                          if (currentStreak != null && currentStreak! > 0)
+                            StreakBadge(
+                              streak: currentStreak!,
+                              isAtRisk: isStreakAtRisk,
+                              showLabel: false,
+                              size: 20,
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       _DayIndicators(

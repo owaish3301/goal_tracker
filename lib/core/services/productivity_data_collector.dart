@@ -3,17 +3,20 @@ import '../../data/models/scheduled_task.dart';
 import '../../data/models/productivity_data.dart';
 import '../../data/repositories/scheduled_task_repository.dart';
 import '../../data/repositories/productivity_data_repository.dart';
+import 'habit_formation_service.dart';
 
 /// Service to collect productivity data for ML training
 class ProductivityDataCollector {
   final Isar isar;
   final ScheduledTaskRepository scheduledTaskRepository;
   final ProductivityDataRepository productivityDataRepository;
+  final HabitFormationService? habitFormationService;
 
   ProductivityDataCollector({
     required this.isar,
     required this.scheduledTaskRepository,
     required this.productivityDataRepository,
+    this.habitFormationService,
   });
 
   /// Record task completion with productivity feedback
@@ -49,6 +52,17 @@ class ProductivityDataCollector {
       actualDurationMinutes: actualDurationMinutes,
       productivityRating: productivityRating,
     );
+
+    // Update habit formation metrics
+    if (habitFormationService != null) {
+      await habitFormationService!.updateMetricsOnCompletion(
+        goalId: task.goalId,
+        completedAt: actualStartTime,
+        actualDuration: actualDurationMinutes,
+        productivityRating: productivityRating.round(),
+      );
+      print('🔥 Habit metrics updated');
+    }
 
     print('✅ Productivity data recorded');
   }
@@ -179,6 +193,12 @@ class ProductivityDataCollector {
       ..recordedAt = DateTime.now();
 
     await productivityDataRepository.createProductivityData(productivityData);
+
+    // Update habit formation metrics (streak break)
+    if (habitFormationService != null) {
+      await habitFormationService!.updateMetricsOnSkip(task.goalId);
+      print('⚠️  Streak may be affected');
+    }
 
     print('✅ Skip recorded (ML will learn to avoid this time!)');
   }

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../data/models/scheduled_task.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/productivity_providers.dart';
+import '../../../goals/presentation/providers/habit_metrics_provider.dart';
+import '../../../goals/presentation/widgets/streak_badge.dart';
 import 'task_completion_modal.dart';
 
 /// Card widget for displaying a scheduled task
@@ -135,6 +137,8 @@ class ScheduledTaskCard extends ConsumerWidget {
                                 ],
                               ),
                             ),
+                          // Streak badge
+                          _buildStreakBadge(ref),
                         ],
                       ),
                     ],
@@ -157,6 +161,27 @@ class ScheduledTaskCard extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildStreakBadge(WidgetRef ref) {
+    final streakAsync = ref.watch(goalStreakStatusProvider(task.goalId));
+    
+    return streakAsync.when(
+      data: (status) {
+        if (status.currentStreak <= 0) {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: MiniStreakBadge(
+            streak: status.currentStreak,
+            isAtRisk: status.isAtRisk,
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
