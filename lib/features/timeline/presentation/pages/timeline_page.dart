@@ -68,42 +68,63 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     }
   }
 
-  /// Regenerate schedule by deleting old tasks and creating new ones (for goal changes)
-  Future<void> _regenerateScheduleForDate(DateTime date) async {
+  /// Smart incremental update for goal changes
+  /// - Preserves rescheduled tasks
+  /// - Only adds tasks for NEW goals
+  /// - Doesn't touch existing scheduled tasks
+  Future<void> _incrementalUpdateForDate(DateTime date) async {
     final normalized = DateTime(date.year, date.month, date.day);
+    final repo = ref.read(scheduledTaskRepositoryProvider);
+    final hybridScheduler = ref.read(hybridSchedulerProvider);
 
     print(
-      '🔄 Regenerating schedule for ${normalized.toIso8601String().split('T')[0]}',
+      '🔄 Incremental update for ${normalized.toIso8601String().split('T')[0]}',
     );
 
-    // 1. Delete existing scheduled tasks for this date
-    final repo = ref.read(scheduledTaskRepositoryProvider);
+    // Get existing tasks for this date
     final existingTasks = await repo.getScheduledTasksForDate(normalized);
-    for (final task in existingTasks) {
-      await repo.deleteScheduledTask(task.id);
+    final existingGoalIds = existingTasks.map((t) => t.goalId).toSet();
+
+    // Get goals that should be scheduled for this date
+    final goals = await ref.read(goalRepositoryProvider).getGoalsByPriority();
+    final dayOfWeek = normalized.weekday; // 1=Monday, 7=Sunday
+    
+    // Filter goals active on this day and created before/on this date
+    // Note: frequency uses 0=Monday, 6=Sunday; weekday uses 1=Monday, 7=Sunday
+    final frequencyIndex = dayOfWeek - 1; // Convert weekday (1-7) to frequency index (0-6)
+    final goalsForDate = goals.where((goal) {
+      final isActiveOnDay = goal.frequency.contains(frequencyIndex);
+      final createdDate = DateTime(
+        goal.createdAt.year,
+        goal.createdAt.month,
+        goal.createdAt.day,
+      );
+      final isCreatedBeforeOrOn = !normalized.isBefore(createdDate);
+      return goal.isActive && isActiveOnDay && isCreatedBeforeOrOn;
+    }).toList();
+
+    // Find NEW goals that don't have tasks yet
+    final newGoals = goalsForDate.where((g) => !existingGoalIds.contains(g.id)).toList();
+
+    if (newGoals.isEmpty) {
+      print('   ✅ No new goals to schedule');
+      ref.invalidate(unifiedTimelineProvider(normalized));
+      return;
     }
-    print('🗑️ Deleted ${existingTasks.length} old tasks');
 
-    // 2. Invalidate providers to clear cache
-    ref.invalidate(generateScheduleProvider(normalized));
-    ref.invalidate(scheduledTasksForDateProvider(normalized));
-    ref.invalidate(tasksForDateProvider(normalized));
-    ref.invalidate(unifiedTimelineProvider(normalized));
+    print('   📋 Found ${newGoals.length} new goals to add');
 
-    // 3. Generate fresh schedule
-    final hybridScheduler = ref.read(hybridSchedulerProvider);
-    final newTasks = await hybridScheduler.scheduleForDate(normalized);
-
-    // 4. Save new tasks to database
-    for (final task in newTasks) {
-      await repo.createScheduledTask(task);
+    // Schedule only the new goals
+    for (final goal in newGoals) {
+      final task = await hybridScheduler.scheduleGoalForDate(goal, normalized, existingTasks);
+      if (task != null) {
+        await repo.createScheduledTask(task);
+        existingTasks.add(task); // Add to list so next goal sees it as blocker
+        print('   ✅ Added task for: ${goal.title}');
+      }
     }
-    print('✅ Created ${newTasks.length} new tasks');
 
-    // Wait for database to settle
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    // 5. Force refresh the timeline
+    // Refresh UI
     ref.invalidate(scheduledTasksForDateProvider(normalized));
     ref.invalidate(unifiedTimelineProvider(normalized));
   }
@@ -133,30 +154,34 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   Widget build(BuildContext context) {
     final sevenDays = _getSevenDays();
 
-    // Listen for goal changes and auto-regenerate schedule
+    // Listen for goal changes and do incremental updates (not full regeneration)
     ref.listen<AsyncValue<List<Goal>>>(goalsProvider, (previous, next) async {
-      // Only regenerate if the list content actually changed
-      // This prevents infinite loops from polling providers emitting new list instances
+      // Only update if the list content actually changed
       final previousList = previous?.valueOrNull ?? [];
       final nextList = next.valueOrNull ?? [];
 
       if (!listEquals(previousList, nextList)) {
-        print('🔄 Goals changed (content diff) - auto-regenerating schedule');
+        print('🔄 Goals changed - performing incremental update');
 
-        // Regenerate for Selected Date, Today, Tomorrow, and Day After Tomorrow
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
+        // Check if a goal was ADDED (not deleted - deletion is handled in goal_provider)
+        if (nextList.length > previousList.length) {
+          // Goal added - do incremental update for today and future
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
 
-        final datesToRegenerate = {
-          selectedDate, // Priority
-          today,
-          today.add(const Duration(days: 1)),
-          today.add(const Duration(days: 2)),
-        };
+          final datesToUpdate = {
+            selectedDate,
+            today,
+            today.add(const Duration(days: 1)),
+            today.add(const Duration(days: 2)),
+          };
 
-        // Regenerate sequentially to avoid overwhelming the system
-        for (final date in datesToRegenerate) {
-          await _regenerateScheduleForDate(date);
+          for (final date in datesToUpdate) {
+            await _incrementalUpdateForDate(date);
+          }
+        } else {
+          // Goal deleted or modified - just refresh UI (deletion already handled)
+          ref.invalidate(unifiedTimelineProvider(selectedDate));
         }
       }
     });

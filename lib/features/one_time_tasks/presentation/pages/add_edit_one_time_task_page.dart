@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -7,18 +8,20 @@ import '../../../../core/services/database_service.dart';
 import '../../../../data/repositories/one_time_task_repository.dart';
 import '../../../goals/presentation/widgets/duration_picker.dart';
 import '../../../goals/presentation/widgets/color_picker.dart';
+import '../providers/one_time_task_provider.dart';
+import '../../../timeline/presentation/providers/timeline_providers.dart';
 
-class AddEditOneTimeTaskPage extends StatefulWidget {
+class AddEditOneTimeTaskPage extends ConsumerStatefulWidget {
   final int? taskId;
   final DateTime? initialDate;
 
   const AddEditOneTimeTaskPage({super.key, this.taskId, this.initialDate});
 
   @override
-  State<AddEditOneTimeTaskPage> createState() => _AddEditOneTimeTaskPageState();
+  ConsumerState<AddEditOneTimeTaskPage> createState() => _AddEditOneTimeTaskPageState();
 }
 
-class _AddEditOneTimeTaskPageState extends State<AddEditOneTimeTaskPage> {
+class _AddEditOneTimeTaskPageState extends ConsumerState<AddEditOneTimeTaskPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
@@ -190,6 +193,15 @@ class _AddEditOneTimeTaskPageState extends State<AddEditOneTimeTaskPage> {
       } else {
         await repository.updateOneTimeTask(task);
       }
+
+      // Invalidate providers for the task's date to refresh UI
+      final taskDate = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+      );
+      ref.invalidate(tasksForDateProvider(taskDate));
+      ref.invalidate(unifiedTimelineProvider(taskDate));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
