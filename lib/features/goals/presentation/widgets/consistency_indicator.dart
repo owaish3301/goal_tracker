@@ -49,12 +49,9 @@ class ConsistencyIndicator extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Consistency',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               Text(
                 '${(score * 100).round()}%',
@@ -115,9 +112,7 @@ class StickyTimeIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -139,7 +134,7 @@ class StickyTimeIndicator extends StatelessWidget {
               if (dayOfWeek != null)
                 Text(
                   _formatDayOfWeek(dayOfWeek!),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 10,
                     color: AppColors.textSecondary,
                   ),
@@ -261,10 +256,7 @@ class HabitHealthCard extends StatelessWidget {
           ConsistencyIndicator(score: consistencyScore),
 
           // At Risk Warning
-          if (isAtRisk) ...[
-            const SizedBox(height: 12),
-            _buildAtRiskWarning(),
-          ],
+          if (isAtRisk) ...[const SizedBox(height: 12), _buildAtRiskWarning()],
 
           // Sticky Time
           if (stickyHour != null && timeConsistency != null) ...[
@@ -308,10 +300,7 @@ class HabitHealthCard extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -350,7 +339,7 @@ class HabitHealthCard extends StatelessWidget {
           Expanded(
             child: Text(
               'Complete a task today to keep your $currentStreak day streak!',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.warning,
                 fontWeight: FontWeight.w500,

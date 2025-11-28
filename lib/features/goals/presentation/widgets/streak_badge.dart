@@ -40,10 +40,7 @@ class StreakBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            _getStreakEmoji(),
-            style: TextStyle(fontSize: size * 0.7),
-          ),
+          Text(_getStreakEmoji(), style: TextStyle(fontSize: size * 0.7)),
           SizedBox(width: size * 0.15),
           Text(
             streak.toString(),
@@ -159,11 +156,11 @@ class StreakDisplay extends StatelessWidget {
                 color: AppColors.warning.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('⚠️', style: TextStyle(fontSize: 14)),
-                  const SizedBox(width: 6),
+                  Text('⚠️', style: TextStyle(fontSize: 14)),
+                  SizedBox(width: 6),
                   Text(
                     'Complete today to keep your streak!',
                     style: TextStyle(
@@ -194,10 +191,7 @@ class StreakDisplay extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
         ),
         const SizedBox(height: 4),
         Row(
@@ -209,16 +203,15 @@ class StreakDisplay extends StatelessWidget {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: isHighlighted ? _getStreakColor() : AppColors.textPrimary,
+                color: isHighlighted
+                    ? _getStreakColor()
+                    : AppColors.textPrimary,
               ),
             ),
             const SizedBox(width: 4),
-            Text(
+            const Text(
               'days',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -306,10 +299,7 @@ class MiniStreakBadge extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          streak >= 21 ? '🔒' : '🔥',
-          style: const TextStyle(fontSize: 12),
-        ),
+        Text(streak >= 21 ? '🔒' : '🔥', style: const TextStyle(fontSize: 12)),
         const SizedBox(width: 2),
         Text(
           streak.toString(),

@@ -18,11 +18,12 @@ subprojects {
 subprojects {
     project.evaluationDependsOn(":app")
 
-    // Workaround for Isar Flutter libs namespace issue
+    // Workaround for Isar Flutter libs namespace and compileSdk issue
     if (project.name == "isar_flutter_libs") {
         afterEvaluate {
             project.extensions.configure<com.android.build.gradle.LibraryExtension> {
                 namespace = "dev.isar.isar_flutter_libs"
+                compileSdk = 36
             }
         }
     }

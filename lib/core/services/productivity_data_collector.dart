@@ -40,11 +40,8 @@ class ProductivityDataCollector {
     // Get the scheduled task
     final task = await scheduledTaskRepository.getScheduledTask(taskId);
     if (task == null) {
-      print('⚠️  Task $taskId not found');
       return;
     }
-
-    print('📊 Recording completion for: ${task.title}');
 
     // Mark task as completed
     await scheduledTaskRepository.markAsCompleted(
@@ -71,10 +68,7 @@ class ProductivityDataCollector {
         actualDuration: actualDurationMinutes,
         productivityRating: productivityRating.round(),
       );
-      print('🔥 Habit metrics updated');
     }
-
-    print('✅ Productivity data recorded');
   }
 
   /// Create ProductivityData record for ML training
@@ -103,42 +97,48 @@ class ProductivityDataCollector {
     final isWeekend = dayOfWeek == 5 || dayOfWeek == 6; // Saturday or Sunday
 
     // Check if there were adjacent tasks (simplified for now)
-    final hadPriorTask = false;
-    final hadFollowingTask = false;
+    const hadPriorTask = false;
+    const hadFollowingTask = false;
 
     // === Phase 8: Capture contextual features ===
-    
+
     // Get context from DailyActivityService
     TaskCompletionContext? context;
     double relativeTimeInDay = 0.5;
     int minutesSinceFirstActivity = 0;
     double previousTaskRating = 0.0;
-    
+
     if (dailyActivityService != null) {
       context = await dailyActivityService!.getTodayContext(actualStartTime);
-      relativeTimeInDay = await dailyActivityService!.calculateRelativeTimeInDay(actualStartTime);
-      minutesSinceFirstActivity = await dailyActivityService!.getMinutesSinceFirstActivity(actualStartTime);
-      previousTaskRating = await dailyActivityService!.getPreviousTaskRating(actualStartTime);
-      
+      relativeTimeInDay = await dailyActivityService!
+          .calculateRelativeTimeInDay(actualStartTime);
+      minutesSinceFirstActivity = await dailyActivityService!
+          .getMinutesSinceFirstActivity(actualStartTime);
+      previousTaskRating = await dailyActivityService!.getPreviousTaskRating(
+        actualStartTime,
+      );
+
       // Record this activity
       await dailyActivityService!.recordTaskCompletion(
         completionTime: actualStartTime,
         productivityRating: productivityRating,
       );
     }
-    
+
     // Get habit metrics for the goal
     int currentStreak = 0;
     double goalConsistencyScore = 0.0;
-    
+
     if (habitMetricsRepository != null) {
-      final metrics = await habitMetricsRepository!.getMetricsForGoal(task.goalId);
+      final metrics = await habitMetricsRepository!.getMetricsForGoal(
+        task.goalId,
+      );
       if (metrics != null) {
         currentStreak = metrics.currentStreak;
         goalConsistencyScore = metrics.consistencyScore;
       }
     }
-    
+
     // Calculate momentum features
     _consecutiveCompletions++;
     final minutesSinceLastCompletion = _lastCompletionTime != null
@@ -184,13 +184,6 @@ class ProductivityDataCollector {
     }
 
     await productivityDataRepository.createProductivityData(productivityData);
-
-    print(
-      '   📈 ML Data: goal=${task.goalId}, hour=$hourOfDay, day=$dayOfWeek, score=$productivityRating',
-    );
-    print(
-      '   📊 Context: order=${context?.taskOrderInDay}, streak=$currentStreak, momentum=${_consecutiveCompletions}',
-    );
   }
 
   /// Record task reschedule (important ML signal!)
@@ -200,33 +193,19 @@ class ProductivityDataCollector {
   }) async {
     final task = await scheduledTaskRepository.getScheduledTask(taskId);
     if (task == null) {
-      print('⚠️  Task $taskId not found');
       return;
     }
 
-    print('🔄 Recording reschedule for: ${task.title}');
-    print(
-      '   From: ${task.scheduledStartTime.hour}:${task.scheduledStartTime.minute.toString().padLeft(2, '0')}',
-    );
-    print(
-      '   To: ${newStartTime.hour}:${newStartTime.minute.toString().padLeft(2, '0')}',
-    );
-
     // Record the reschedule
     await scheduledTaskRepository.recordReschedule(taskId, newStartTime);
-
-    print('✅ Reschedule recorded (ML will learn from this!)');
   }
 
   /// Mark task as skipped (not completed)
   Future<void> recordTaskSkipped({required int taskId, String? reason}) async {
     final task = await scheduledTaskRepository.getScheduledTask(taskId);
     if (task == null) {
-      print('⚠️  Task $taskId not found');
       return;
     }
-
-    print('⏭️  Recording skip for: ${task.title}');
 
     // Create productivity data with low score and wasCompleted = false
     final now = DateTime.now();
@@ -242,26 +221,32 @@ class ProductivityDataCollector {
     double relativeTimeInDay = 0.5;
     int minutesSinceFirstActivity = 0;
     double previousTaskRating = 0.0;
-    
+
     if (dailyActivityService != null) {
       context = await dailyActivityService!.getTodayContext(now);
-      relativeTimeInDay = await dailyActivityService!.calculateRelativeTimeInDay(now);
-      minutesSinceFirstActivity = await dailyActivityService!.getMinutesSinceFirstActivity(now);
-      previousTaskRating = await dailyActivityService!.getPreviousTaskRating(now);
+      relativeTimeInDay = await dailyActivityService!
+          .calculateRelativeTimeInDay(now);
+      minutesSinceFirstActivity = await dailyActivityService!
+          .getMinutesSinceFirstActivity(now);
+      previousTaskRating = await dailyActivityService!.getPreviousTaskRating(
+        now,
+      );
     }
-    
+
     // Get habit metrics for the goal
     int currentStreak = 0;
     double goalConsistencyScore = 0.0;
-    
+
     if (habitMetricsRepository != null) {
-      final metrics = await habitMetricsRepository!.getMetricsForGoal(task.goalId);
+      final metrics = await habitMetricsRepository!.getMetricsForGoal(
+        task.goalId,
+      );
       if (metrics != null) {
         currentStreak = metrics.currentStreak;
         goalConsistencyScore = metrics.consistencyScore;
       }
     }
-    
+
     // Reset momentum on skip
     final previousConsecutive = _consecutiveCompletions;
     _consecutiveCompletions = 0;
@@ -298,20 +283,16 @@ class ProductivityDataCollector {
       ..completionRateLast7Days = context?.completionRateLast7Days ?? 0.0
       ..currentStreakAtCompletion = currentStreak
       ..goalConsistencyScore = goalConsistencyScore
-      ..consecutiveTasksCompleted = previousConsecutive  // Record the streak that was broken
+      ..consecutiveTasksCompleted =
+          previousConsecutive // Record the streak that was broken
       ..minutesSinceLastCompletion = minutesSinceLastCompletion;
 
     await productivityDataRepository.createProductivityData(productivityData);
-    
-    print('   📈 Skip context: momentum=$previousConsecutive→0, streak=$currentStreak');
 
     // Update habit formation metrics (streak break)
     if (habitFormationService != null) {
       await habitFormationService!.updateMetricsOnSkip(task.goalId);
-      print('⚠️  Streak may be affected');
     }
-
-    print('✅ Skip recorded (ML will learn to avoid this time!)');
   }
 
   /// Get week of year (1-52)

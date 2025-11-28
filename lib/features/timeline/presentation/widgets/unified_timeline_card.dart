@@ -18,7 +18,7 @@ class UnifiedTimelineCard extends ConsumerWidget {
   /// Check if a one-time task can be completed (only today's tasks)
   bool _canCompleteOneTimeTask(OneTimeTask task) {
     if (task.isCompleted) return false;
-    
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final taskDate = DateTime(
@@ -26,7 +26,7 @@ class UnifiedTimelineCard extends ConsumerWidget {
       task.scheduledDate.month,
       task.scheduledDate.day,
     );
-    
+
     // Only allow completing today's tasks
     return taskDate.isAtSameMomentAs(today);
   }
@@ -38,37 +38,31 @@ class UnifiedTimelineCard extends ConsumerWidget {
       case TimelineItemType.oneTime:
         final task = item.asOneTimeTask!;
         final canComplete = _canCompleteOneTimeTask(task);
-        
+
         return OneTimeTaskCard(
           task: task,
-          onToggleComplete: canComplete ? () async {
-            // Haptic feedback for better UX
-            HapticFeedback.lightImpact();
+          onToggleComplete: canComplete
+              ? () async {
+                  // Haptic feedback for better UX
+                  HapticFeedback.lightImpact();
 
-            print(
-              '🔘 OneTimeTask toggle tapped for task: ${task.id}',
-            );
+                  // Toggle the one-time task completion
+                  final notifier = ref.read(
+                    oneTimeTaskNotifierProvider.notifier,
+                  );
+                  await notifier.toggleComplete(task.id);
 
-            // Toggle the one-time task completion
-            final notifier = ref.read(oneTimeTaskNotifierProvider.notifier);
-            await notifier.toggleComplete(task.id);
-
-            print('✅ OneTimeTask toggled successfully');
-
-            // Notify parent to refresh
-            onCompleted?.call();
-          } : null,
+                  // Notify parent to refresh
+                  onCompleted?.call();
+                }
+              : null,
           onDelete: () async {
             // Haptic feedback for delete
             HapticFeedback.mediumImpact();
 
-            print('🗑️ Deleting one-time task: ${task.id}');
-
             // Delete the task
             final notifier = ref.read(oneTimeTaskNotifierProvider.notifier);
             await notifier.deleteTask(task.id);
-
-            print('✅ OneTimeTask deleted successfully');
 
             // Notify parent to refresh
             onCompleted?.call();
@@ -94,19 +88,14 @@ class _GoalPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final goal = item.asGoal!;
-    final goalColor = Color(
-      int.parse(goal.colorHex.replaceFirst('#', '0xFF')),
-    );
+    final goalColor = Color(int.parse(goal.colorHex.replaceFirst('#', '0xFF')));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: goalColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: goalColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

@@ -261,4 +261,50 @@ class ScheduledTaskRepository {
         .scheduledDateEqualTo(normalizedDate)
         .watch(fireImmediately: true);
   }
+
+  /// Remove duplicate tasks for the same goal on the same date
+  /// Keeps the first task (usually rescheduled or completed) and removes others
+  Future<int> removeDuplicateTasks() async {
+    return await isar.writeTxn(() async {
+      final allTasks = await isar.scheduledTasks.where().findAll();
+      
+      // Group by goalId + date
+      final Map<String, List<ScheduledTask>> grouped = {};
+      for (final task in allTasks) {
+        final key = '${task.goalId}_${task.scheduledDate.toIso8601String().split('T')[0]}';
+        grouped.putIfAbsent(key, () => []).add(task);
+      }
+      
+      // Find duplicates
+      final idsToDelete = <int>[];
+      for (final tasks in grouped.values) {
+        if (tasks.length > 1) {
+          // Sort: keep completed/rescheduled first, then by ID (oldest)
+          tasks.sort((a, b) {
+            // Prioritize completed tasks
+            if (a.isCompleted != b.isCompleted) {
+              return a.isCompleted ? -1 : 1;
+            }
+            // Then prioritize rescheduled tasks
+            if (a.wasRescheduled != b.wasRescheduled) {
+              return a.wasRescheduled ? -1 : 1;
+            }
+            // Otherwise keep the oldest (lowest ID)
+            return a.id.compareTo(b.id);
+          });
+          
+          // Keep the first, delete the rest
+          for (int i = 1; i < tasks.length; i++) {
+            idsToDelete.add(tasks[i].id);
+          }
+        }
+      }
+      
+      if (idsToDelete.isNotEmpty) {
+        await isar.scheduledTasks.deleteAll(idsToDelete);
+      }
+      
+      return idsToDelete.length;
+    });
+  }
 }

@@ -49,15 +49,13 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
       ),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.2, 0.8, curve: Curves.easeOut),
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOut),
+          ),
+        );
 
     _controller.forward();
   }
@@ -177,8 +175,9 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
                                   ? 'Set your work schedule below'
                                   : 'No fixed work schedule',
                               style: TextStyle(
-                                color:
-                                    AppColors.textSecondary.withValues(alpha: 0.7),
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.7,
+                                ),
                                 fontSize: 14,
                               ),
                             ),
@@ -193,10 +192,13 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
                           });
                         },
                         activeThumbColor: AppColors.primary,
-                        activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
+                        activeTrackColor: AppColors.primary.withValues(
+                          alpha: 0.3,
+                        ),
                         inactiveThumbColor: AppColors.textSecondary,
-                        inactiveTrackColor:
-                            AppColors.textSecondary.withValues(alpha: 0.2),
+                        inactiveTrackColor: AppColors.textSecondary.withValues(
+                          alpha: 0.2,
+                        ),
                       ),
                     ],
                   ),
@@ -234,7 +236,8 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
                       ),
                       const SizedBox(height: 20),
                       // Work duration display
-                      if (widget.workStartHour != null && widget.workEndHour != null)
+                      if (widget.workStartHour != null &&
+                          widget.workEndHour != null)
                         _buildDurationDisplay(),
                     ],
                   ),
@@ -256,7 +259,9 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF64D2FF).withValues(alpha: 0.1),
+                            color: const Color(
+                              0xFF64D2FF,
+                            ).withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: const Center(
@@ -277,7 +282,9 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
                           'Goals will be scheduled throughout\nyour waking hours',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: AppColors.textSecondary.withValues(alpha: 0.7),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.7,
+                            ),
                             fontSize: 15,
                           ),
                         ),
@@ -342,7 +349,9 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
           color: AppColors.surfaceDark,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: hour != null ? color.withValues(alpha: 0.3) : Colors.transparent,
+            color: hour != null
+                ? color.withValues(alpha: 0.3)
+                : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -400,9 +409,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -426,7 +433,11 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
     );
   }
 
-  void _showTimePicker(int initialHour, ValueChanged<int> onChanged, Color color) {
+  void _showTimePicker(
+    int initialHour,
+    ValueChanged<int> onChanged,
+    Color color,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -448,7 +459,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
               ),
             ),
             const SizedBox(height: 20),
-            Text(
+            const Text(
               'Select Time',
               style: TextStyle(
                 color: AppColors.textPrimary,
@@ -462,7 +473,9 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
                 perspective: 0.005,
                 diameterRatio: 1.5,
                 physics: const FixedExtentScrollPhysics(),
-                controller: FixedExtentScrollController(initialItem: initialHour),
+                controller: FixedExtentScrollController(
+                  initialItem: initialHour,
+                ),
                 onSelectedItemChanged: (index) => onChanged(index),
                 childDelegate: ListWheelChildBuilderDelegate(
                   childCount: 24,
@@ -474,7 +487,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
                     return Center(
                       child: Text(
                         '$displayHour:00 $period',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.w500,
@@ -501,10 +514,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
                   ),
                   child: const Text(
                     'Done',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

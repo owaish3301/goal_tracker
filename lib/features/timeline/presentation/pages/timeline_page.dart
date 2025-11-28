@@ -46,9 +46,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     // Only generate schedules for today or past dates, NOT future dates
     // Future dates will show goal previews instead
     if (normalized.isAfter(today)) {
-      print(
-        '📅 Skipping schedule generation for future date: ${normalized.toIso8601String().split('T')[0]} (will show previews)',
-      );
       return;
     }
 
@@ -58,25 +55,21 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
     if (existing.isEmpty) {
       // Generate new schedule
-      print(
-        '📅 Generating schedule for ${normalized.toIso8601String().split('T')[0]}',
-      );
       final hybridScheduler = ref.read(hybridSchedulerProvider);
       final newTasks = await hybridScheduler.scheduleForDate(normalized);
 
-      // Save to database
+      // Save to database, checking for duplicates before each save
+      // This handles race conditions where multiple callers try to generate simultaneously
       for (final task in newTasks) {
-        await repo.createScheduledTask(task);
+        final existingForGoal = await repo.getTaskForGoalOnDate(task.goalId, normalized);
+        if (existingForGoal == null) {
+          await repo.createScheduledTask(task);
+        }
       }
-      print('✅ Created ${newTasks.length} tasks');
 
       // Refresh UI
       ref.invalidate(scheduledTasksForDateProvider(normalized));
       ref.invalidate(unifiedTimelineProvider(normalized));
-    } else {
-      print(
-        '📅 Schedule already exists for ${normalized.toIso8601String().split('T')[0]} (${existing.length} tasks)',
-      );
     }
   }
 
@@ -92,9 +85,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
     // Skip future dates - they show goal previews, not scheduled tasks
     if (normalized.isAfter(today)) {
-      print(
-        '🔄 Skipping incremental update for future date: ${normalized.toIso8601String().split('T')[0]} (previews only)',
-      );
       // Just refresh the preview
       ref.invalidate(unifiedTimelineProvider(normalized));
       return;
@@ -103,10 +93,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     final repo = ref.read(scheduledTaskRepositoryProvider);
     final hybridScheduler = ref.read(hybridSchedulerProvider);
 
-    print(
-      '🔄 Incremental update for ${normalized.toIso8601String().split('T')[0]}',
-    );
-
     // Get existing tasks for this date
     final existingTasks = await repo.getScheduledTasksForDate(normalized);
     final existingGoalIds = existingTasks.map((t) => t.goalId).toSet();
@@ -114,10 +100,17 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     // Get goals that should be scheduled for this date
     final goals = await ref.read(goalRepositoryProvider).getGoalsByPriority();
     final dayOfWeek = normalized.weekday; // 1=Monday, 7=Sunday
-    
+
     // Filter goals active on this day and created before/on this date
-    // Note: frequency uses 0=Monday, 6=Sunday; weekday uses 1=Monday, 7=Sunday
-    final frequencyIndex = dayOfWeek - 1; // Convert weekday (1-7) to frequency index (0-6)
+    // Note: frequency uses 0=Monday, 7=Sunday; weekday uses 1=Monday, 7=Sunday
+    // Wait, frequency usually uses 0-6. Let's check rule_based_scheduler.dart.
+    // In rule_based_scheduler: final dayOfWeek = date.weekday - 1;
+    // Here: final dayOfWeek = normalized.weekday;
+    // And frequencyIndex = dayOfWeek - 1;
+    // So it matches.
+
+    final frequencyIndex =
+        dayOfWeek - 1; // Convert weekday (1-7) to frequency index (0-6)
     final goalsForDate = goals.where((goal) {
       final isActiveOnDay = goal.frequency.contains(frequencyIndex);
       final createdDate = DateTime(
@@ -130,23 +123,25 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     }).toList();
 
     // Find NEW goals that don't have tasks yet
-    final newGoals = goalsForDate.where((g) => !existingGoalIds.contains(g.id)).toList();
+    final newGoals = goalsForDate
+        .where((g) => !existingGoalIds.contains(g.id))
+        .toList();
 
     if (newGoals.isEmpty) {
-      print('   ✅ No new goals to schedule');
       ref.invalidate(unifiedTimelineProvider(normalized));
       return;
     }
 
-    print('   📋 Found ${newGoals.length} new goals to add');
-
     // Schedule only the new goals
     for (final goal in newGoals) {
-      final task = await hybridScheduler.scheduleGoalForDate(goal, normalized, existingTasks);
+      final task = await hybridScheduler.scheduleGoalForDate(
+        goal,
+        normalized,
+        existingTasks,
+      );
       if (task != null) {
         await repo.createScheduledTask(task);
         existingTasks.add(task); // Add to list so next goal sees it as blocker
-        print('   ✅ Added task for: ${goal.title}');
       }
     }
 
@@ -187,8 +182,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       final nextList = next.valueOrNull ?? [];
 
       if (!listEquals(previousList, nextList)) {
-        print('🔄 Goals changed - performing incremental update');
-
         // Check if a goal was ADDED (not deleted - deletion is handled in goal_provider)
         if (nextList.length > previousList.length) {
           // Goal added - do incremental update for today and future
@@ -297,9 +290,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           Expanded(
             child: Container(
               width: double.infinity,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
               ),
               child: Column(
                 children: [
@@ -443,12 +436,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           children: [
             const Icon(Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Error loading tasks',
-              style: const TextStyle(
-                fontSize: 18,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -474,12 +464,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
             color: AppColors.textSecondary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'No tasks scheduled',
-            style: TextStyle(
-              fontSize: 18,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
           Text(

@@ -101,8 +101,9 @@ void main() {
         );
 
         // Verify task is marked as completed
-        final updatedTask =
-            await scheduledTaskRepository.getScheduledTask(task.id);
+        final updatedTask = await scheduledTaskRepository.getScheduledTask(
+          task.id,
+        );
         expect(updatedTask!.isCompleted, true);
         expect(updatedTask.completedAt, isNotNull);
         expect(updatedTask.actualStartTime, DateTime(2024, 1, 15, 9, 15));
@@ -111,8 +112,8 @@ void main() {
         expect(updatedTask.completionNotes, 'Great session!');
 
         // Verify productivity data was created
-        final productivityData =
-            await productivityDataRepository.getDataForGoal(task.goalId);
+        final productivityData = await productivityDataRepository
+            .getDataForGoal(task.goalId);
         expect(productivityData, hasLength(1));
 
         final data = productivityData.first;
@@ -173,16 +174,15 @@ void main() {
         );
 
         // Verify time slot types
-        final morningData =
-            await productivityDataRepository.getDataForGoal(1);
+        final morningData = await productivityDataRepository.getDataForGoal(1);
         expect(morningData.first.timeSlotType, 0); // Morning
 
-        final afternoonData =
-            await productivityDataRepository.getDataForGoal(2);
+        final afternoonData = await productivityDataRepository.getDataForGoal(
+          2,
+        );
         expect(afternoonData.first.timeSlotType, 1); // Afternoon
 
-        final eveningData =
-            await productivityDataRepository.getDataForGoal(3);
+        final eveningData = await productivityDataRepository.getDataForGoal(3);
         expect(eveningData.first.timeSlotType, 2); // Evening
       });
 
@@ -202,8 +202,8 @@ void main() {
           productivityRating: 3.0,
         );
 
-        final productivityData =
-            await productivityDataRepository.getDataForGoal(task.goalId);
+        final productivityData = await productivityDataRepository
+            .getDataForGoal(task.goalId);
         expect(productivityData.first.minutesFromScheduled, 30);
       });
 
@@ -216,8 +216,7 @@ void main() {
           productivityRating: 4.0,
         );
 
-        final allData =
-            await productivityDataRepository.getDataCount();
+        final allData = await productivityDataRepository.getDataCount();
         expect(allData, 0);
       });
 
@@ -254,12 +253,10 @@ void main() {
           productivityRating: 4.0,
         );
 
-        final saturdayData =
-            await productivityDataRepository.getDataForGoal(1);
+        final saturdayData = await productivityDataRepository.getDataForGoal(1);
         expect(saturdayData.first.isWeekend, true);
 
-        final mondayData =
-            await productivityDataRepository.getDataForGoal(2);
+        final mondayData = await productivityDataRepository.getDataForGoal(2);
         expect(mondayData.first.isWeekend, false);
       });
     });
@@ -279,8 +276,9 @@ void main() {
           newStartTime: newTime,
         );
 
-        final updatedTask =
-            await scheduledTaskRepository.getScheduledTask(task.id);
+        final updatedTask = await scheduledTaskRepository.getScheduledTask(
+          task.id,
+        );
         expect(updatedTask!.wasRescheduled, true);
         expect(updatedTask.rescheduledTo, newTime);
         expect(updatedTask.rescheduleCount, 1);
@@ -310,8 +308,9 @@ void main() {
           newStartTime: DateTime(2024, 1, 15, 16),
         );
 
-        final updatedTask =
-            await scheduledTaskRepository.getScheduledTask(task.id);
+        final updatedTask = await scheduledTaskRepository.getScheduledTask(
+          task.id,
+        );
         expect(updatedTask!.rescheduleCount, 3);
       });
 
@@ -335,8 +334,8 @@ void main() {
 
         await collector.recordTaskSkipped(taskId: task.id);
 
-        final productivityData =
-            await productivityDataRepository.getDataForGoal(task.goalId);
+        final productivityData = await productivityDataRepository
+            .getDataForGoal(task.goalId);
         expect(productivityData, hasLength(1));
 
         final data = productivityData.first;
@@ -363,7 +362,7 @@ void main() {
       });
 
       test('calculates correct statistics', () async {
-        final goalId = 1;
+        const goalId = 1;
 
         // Create and complete multiple tasks
         for (int i = 0; i < 5; i++) {
@@ -403,7 +402,7 @@ void main() {
       });
 
       test('includes reschedule count', () async {
-        final goalId = 1;
+        const goalId = 1;
 
         final task = await createTestTask(
           title: 'Rescheduled Task',
@@ -452,8 +451,8 @@ void main() {
           productivityRating: 4.5,
         );
 
-        final productivityData =
-            await productivityDataRepository.getDataForGoal(task.goalId);
+        final productivityData = await productivityDataRepository
+            .getDataForGoal(task.goalId);
 
         expect(productivityData, hasLength(1));
         // The collector should recognize this was ML-scheduled

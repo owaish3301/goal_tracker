@@ -19,33 +19,41 @@ final generateScheduleProvider =
       // Check if schedule already exists for this date
       final existing = await repo.getScheduledTasksForDate(date);
       if (existing.isNotEmpty) {
-        print(
-          '📅 Schedule already exists for ${date.toIso8601String().split('T')[0]}',
-        );
         return existing;
       }
 
       // Generate new schedule
-      print(
-        '🚀 Generating schedule for ${date.toIso8601String().split('T')[0]}',
-      );
       final tasks = await hybridScheduler.scheduleForDate(date);
 
-      // Save to database
+      // Save to database, checking for duplicates before each save
+      // This handles race conditions where multiple callers try to generate simultaneously
+      final savedTasks = <ScheduledTask>[];
       for (final task in tasks) {
-        await repo.createScheduledTask(task);
+        // Check if task for this goal already exists (could have been created by another caller)
+        final existingForGoal = await repo.getTaskForGoalOnDate(task.goalId, date);
+        if (existingForGoal == null) {
+          await repo.createScheduledTask(task);
+          savedTasks.add(task);
+        } else {
+          savedTasks.add(existingForGoal);
+        }
       }
 
-      return tasks;
+      return savedTasks;
     });
 
 /// Provider to check if schedule needs generation (on app launch)
 final autoGenerateScheduleProvider = FutureProvider<void>((ref) async {
   final today = DateTime.now();
   final normalizedToday = DateTime(today.year, today.month, today.day);
+  
+  // First, clean up any duplicate tasks from previous bugs
+  final repo = ref.watch(scheduledTaskRepositoryProvider);
+  final duplicatesRemoved = await repo.removeDuplicateTasks();
+  if (duplicatesRemoved > 0) {
+  }
 
   // Trigger generation for today (will skip if already exists)
   await ref.watch(generateScheduleProvider(normalizedToday).future);
 
-  print('✅ Auto-generation check complete');
 });

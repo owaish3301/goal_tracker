@@ -51,9 +51,9 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -97,7 +97,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
             const SizedBox(height: 24),
 
             // Productivity Rating
-            Text(
+            const Text(
               'How productive were you?',
               style: TextStyle(
                 fontSize: 16,
@@ -110,7 +110,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
             const SizedBox(height: 24),
 
             // Actual Start Time
-            Text(
+            const Text(
               'When did you actually start?',
               style: TextStyle(
                 fontSize: 16,
@@ -123,7 +123,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
             const SizedBox(height: 24),
 
             // Actual Duration
-            Text(
+            const Text(
               'How long did it take?',
               style: TextStyle(
                 fontSize: 16,
@@ -136,7 +136,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
             const SizedBox(height: 24),
 
             // Notes (optional)
-            Text(
+            const Text(
               'Notes (optional)',
               style: TextStyle(
                 fontSize: 16,
@@ -152,7 +152,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 hintText: 'Any thoughts about this session?',
-                hintStyle: TextStyle(color: AppColors.textSecondary),
+                hintStyle: const TextStyle(color: AppColors.textSecondary),
                 filled: true,
                 fillColor: AppColors.background,
                 border: OutlineInputBorder(
@@ -222,7 +222,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
           const SizedBox(height: 12),
           Text(
             _getRatingLabel(_productivityRating.round()),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
@@ -261,7 +261,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
         ),
         child: Row(
           children: [
-            Icon(Icons.access_time, color: AppColors.primary),
+            const Icon(Icons.access_time, color: AppColors.primary),
             const SizedBox(width: 12),
             Text(
               '${_actualStartTime.hour.toString().padLeft(2, '0')}:${_actualStartTime.minute.toString().padLeft(2, '0')}',
@@ -272,7 +272,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
               ),
             ),
             const Spacer(),
-            Icon(Icons.edit, size: 20, color: AppColors.textSecondary),
+            const Icon(Icons.edit, size: 20, color: AppColors.textSecondary),
           ],
         ),
       ),
@@ -291,7 +291,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
       ),
       child: Row(
         children: [
-          Icon(Icons.timer, color: AppColors.primary),
+          const Icon(Icons.timer, color: AppColors.primary),
           const SizedBox(width: 12),
           Text(
             hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m',

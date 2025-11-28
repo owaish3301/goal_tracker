@@ -79,7 +79,8 @@ class OnboardingState {
   }
 
   /// Total pages in onboarding
-  static const int totalPages = 6; // Welcome, Chronotype, Sleep, Session, Work, Complete
+  static const int totalPages =
+      6; // Welcome, Chronotype, Sleep, Session, Work, Complete
 }
 
 /// Onboarding controller notifier
@@ -116,11 +117,8 @@ class OnboardingController extends StateNotifier<OnboardingState> {
       workStartHour: state.data.workStartHour,
       workEndHour: state.data.workEndHour,
     );
-    final completionPage = OnboardingState.totalPages - 1;
-    state = state.copyWith(
-      data: data,
-      currentPage: completionPage,
-    );
+    const completionPage = OnboardingState.totalPages - 1;
+    state = state.copyWith(data: data, currentPage: completionPage);
   }
 
   /// Update chronotype
@@ -160,18 +158,13 @@ class OnboardingController extends StateNotifier<OnboardingState> {
   /// Update sleep schedule
   void setSleepSchedule(int wakeUpHour, int sleepHour) {
     state = state.copyWith(
-      data: state.data.copyWith(
-        wakeUpHour: wakeUpHour,
-        sleepHour: sleepHour,
-      ),
+      data: state.data.copyWith(wakeUpHour: wakeUpHour, sleepHour: sleepHour),
     );
   }
 
   /// Update session length
   void setSessionLength(SessionLength length) {
-    state = state.copyWith(
-      data: state.data.copyWith(sessionLength: length),
-    );
+    state = state.copyWith(data: state.data.copyWith(sessionLength: length));
   }
 
   /// Update work schedule
@@ -221,10 +214,10 @@ class OnboardingController extends StateNotifier<OnboardingState> {
       );
 
       state = state.copyWith(isCompleting: false);
-      
+
       // Invalidate the onboarding completed provider so router gets fresh value
       ref.invalidate(isOnboardingCompletedProvider);
-      
+
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -240,8 +233,8 @@ class OnboardingController extends StateNotifier<OnboardingState> {
 /// Note: Not using autoDispose to keep state during onboarding flow
 final onboardingControllerProvider =
     StateNotifierProvider<OnboardingController, OnboardingState>(
-  (ref) => OnboardingController(ref),
-);
+      (ref) => OnboardingController(ref),
+    );
 
 /// Provider to check if onboarding is completed
 final isOnboardingCompletedProvider = FutureProvider<bool>((ref) async {

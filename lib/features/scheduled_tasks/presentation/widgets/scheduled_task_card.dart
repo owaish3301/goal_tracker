@@ -6,7 +6,7 @@ import '../../../../core/providers/productivity_providers.dart';
 import '../../../../core/services/database_service.dart';
 import '../../../goals/presentation/providers/habit_metrics_provider.dart';
 import '../../../goals/presentation/widgets/streak_badge.dart';
-import '../providers/scheduled_task_providers.dart';
+
 import 'task_completion_modal.dart';
 
 /// Card widget for displaying a scheduled task
@@ -19,7 +19,7 @@ class ScheduledTaskCard extends ConsumerWidget {
   /// Check if this task can be completed (only today's tasks)
   bool _canComplete() {
     if (task.isCompleted) return false;
-    
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final taskDate = DateTime(
@@ -27,7 +27,7 @@ class ScheduledTaskCard extends ConsumerWidget {
       task.scheduledDate.month,
       task.scheduledDate.day,
     );
-    
+
     // Only allow completing today's tasks
     return taskDate.isAtSameMomentAs(today);
   }
@@ -36,7 +36,7 @@ class ScheduledTaskCard extends ConsumerWidget {
   String _formatTimeRange() {
     final startTime = task.scheduledStartTime;
     final endTime = startTime.add(Duration(minutes: task.duration));
-    
+
     String format(DateTime dt) {
       final hour = dt.hour;
       final minute = dt.minute.toString().padLeft(2, '0');
@@ -44,7 +44,7 @@ class ScheduledTaskCard extends ConsumerWidget {
       final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
       return '$hour12:$minute $period';
     }
-    
+
     return '${format(startTime)} - ${format(endTime)}';
   }
 
@@ -53,7 +53,7 @@ class ScheduledTaskCard extends ConsumerWidget {
     final taskColor = Color(
       int.parse(task.colorHex?.replaceFirst('#', '0xFF') ?? '0xFFC6F432'),
     );
-    
+
     final canComplete = _canComplete();
 
     return Container(
@@ -71,10 +71,10 @@ class ScheduledTaskCard extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: canComplete
-              ? () => _showCompletionModal(context, ref)
-              : null,
-          onLongPress: task.isCompleted ? null : () => _showRescheduleModal(context, ref),
+          onTap: canComplete ? () => _showCompletionModal(context, ref) : null,
+          onLongPress: task.isCompleted
+              ? null
+              : () => _showRescheduleModal(context, ref),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -189,7 +189,7 @@ class ScheduledTaskCard extends ConsumerWidget {
 
   Widget _buildStreakBadge(WidgetRef ref) {
     final streakAsync = ref.watch(goalStreakStatusProvider(task.goalId));
-    
+
     return streakAsync.when(
       data: (status) {
         if (status.currentStreak <= 0) {
@@ -271,11 +271,11 @@ class ScheduledTaskCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               // Title
-              Text(
+              const Text(
                 'Reschedule Task',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -284,13 +284,13 @@ class ScheduledTaskCard extends ConsumerWidget {
               const SizedBox(height: 8),
               Text(
                 task.title,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Time picker button
               InkWell(
                 onTap: () async {
@@ -322,10 +322,7 @@ class ScheduledTaskCard extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.access_time,
-                        color: AppColors.primary,
-                      ),
+                      const Icon(Icons.access_time, color: AppColors.primary),
                       const SizedBox(width: 12),
                       Text(
                         'New Time: ${selectedTime.format(context)}',
@@ -344,7 +341,7 @@ class ScheduledTaskCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Action buttons
               Row(
                 children: [
@@ -377,21 +374,23 @@ class ScheduledTaskCard extends ConsumerWidget {
                           selectedTime.hour,
                           selectedTime.minute,
                         );
-                        
+
                         task.scheduledStartTime = newStartTime;
                         task.wasRescheduled = true;
                         task.rescheduleCount = (task.rescheduleCount) + 1;
-                        
+
                         await repo.updateScheduledTask(task);
-                        
+
                         // Notify parent to refresh
                         onCompleted?.call();
-                        
+
                         if (context.mounted) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Task rescheduled to ${selectedTime.format(context)}'),
+                              content: Text(
+                                'Task rescheduled to ${selectedTime.format(context)}',
+                              ),
                               backgroundColor: AppColors.primary,
                             ),
                           );

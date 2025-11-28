@@ -14,7 +14,7 @@ import 'dynamic_time_window_service.dart';
 
 /// Three-tier hybrid scheduler with habit formation overlay
 /// Tier 1: ML-based (if ≥10 data points, ≥60% confidence)
-/// Tier 2: Profile-based (if onboarding completed)  
+/// Tier 2: Profile-based (if onboarding completed)
 /// Tier 3: Rule-based (fallback)
 /// Overlay: Habit formation (sticky times, streak protection)
 class HybridScheduler {
@@ -24,7 +24,7 @@ class HybridScheduler {
   final ScheduledTaskRepository scheduledTaskRepository;
   final RuleBasedScheduler ruleBasedScheduler;
   final MLPredictor mlPredictor;
-  
+
   // New for v2
   final ProfileBasedScheduler? profileBasedScheduler;
   final DynamicTimeWindowService? dynamicTimeWindowService;
@@ -33,7 +33,7 @@ class HybridScheduler {
 
   // Confidence threshold for using ML predictions
   static const double minMLConfidence = 0.6;
-  
+
   // Streak thresholds for habit protection
   static const int streakProtectionThreshold = 14; // Protect streaks 14+ days
   static const int habitLockThreshold = 21; // Lock in time after 21 days
@@ -63,38 +63,25 @@ class HybridScheduler {
 
   /// Main scheduling method - intelligently uses ML or rules
   Future<List<ScheduledTask>> scheduleForDate(DateTime date) async {
-    print(
-      '\n🧠 Hybrid Scheduler: Generating schedule for ${date.toIso8601String().split('T')[0]}',
-    );
-    print('   Using: ${mlPredictor.predictorName}');
-
     // Get goals for this date
     final goals = await _getActiveGoalsForDate(date);
-    print('   📋 Found ${goals.length} goals');
 
     if (goals.isEmpty) {
-      print('   ✅ No goals to schedule');
       return [];
     }
 
     // Get blockers
     final blockers = await _getBlockersForDate(date);
-    print('   🚫 Found ${blockers.length} blockers');
 
     // Calculate available slots using dynamic wake/sleep times
-    final availableSlots = await ruleBasedScheduler.calculateAvailableSlotsAsync(
-      date,
-      blockers,
-    );
-    print('   ⏰ Available slots: ${availableSlots.length}');
+    final availableSlots = await ruleBasedScheduler
+        .calculateAvailableSlotsAsync(date, blockers);
 
     // Schedule each goal using hybrid approach
     final scheduledTasks = <ScheduledTask>[];
     final usedSlots = <TimeSlot>[];
 
     for (final goal in goals) {
-      print('\n   🎯 Scheduling: ${goal.title}');
-
       // Try ML-based scheduling first
       final task = await _scheduleGoalHybrid(
         goal: goal,
@@ -106,22 +93,8 @@ class HybridScheduler {
       if (task != null) {
         scheduledTasks.add(task);
         ruleBasedScheduler.markSlotAsUsed(task, usedSlots);
-        print(
-          '      ✅ Scheduled at ${task.scheduledStartTime.hour}:${task.scheduledStartTime.minute.toString().padLeft(2, '0')} (${task.schedulingMethod})',
-        );
-      } else {
-        print('      ❌ Could not fit in schedule');
       }
     }
-
-    print(
-      '\n   ✨ Successfully scheduled ${scheduledTasks.length}/${goals.length} goals',
-    );
-    final mlCount = scheduledTasks.where((t) => t.schedulingMethod == 'ml-based').length;
-    final profileCount = scheduledTasks.where((t) => t.schedulingMethod == 'profile-based').length;
-    final ruleCount = scheduledTasks.where((t) => t.schedulingMethod == 'rule-based').length;
-    final habitCount = scheduledTasks.where((t) => t.schedulingMethod == 'habit-locked').length;
-    print('   📊 ML: $mlCount, Profile: $profileCount, Rules: $ruleCount, Habit-locked: $habitCount\n');
 
     return scheduledTasks;
   }
@@ -151,7 +124,6 @@ class HybridScheduler {
     // Tier 1: Try ML-based scheduling
     final hasMLData = await mlPredictor.hasEnoughData(goal.id);
     if (hasMLData) {
-      print('      🧠 Trying ML-based scheduling...');
       final mlTask = await _scheduleWithML(
         goal: goal,
         date: date,
@@ -161,14 +133,10 @@ class HybridScheduler {
       if (mlTask != null) {
         return mlTask;
       }
-      print('      ⚠️  ML failed, trying profile-based...');
-    } else {
-      print('      📊 Insufficient ML data (need ${mlPredictor.minDataPoints}+)');
     }
 
     // Tier 2: Try Profile-based scheduling
     if (await _isProfileAvailable()) {
-      print('      👤 Trying profile-based scheduling...');
       final profileTask = await _scheduleWithProfile(
         goal: goal,
         date: date,
@@ -178,11 +146,9 @@ class HybridScheduler {
       if (profileTask != null) {
         return profileTask;
       }
-      print('      ⚠️  Profile-based failed, falling back to rules');
     }
 
     // Tier 3: Fall back to rule-based scheduling
-    print('      📋 Using rule-based scheduling...');
     return _scheduleWithRules(
       goal: goal,
       date: date,
@@ -204,29 +170,36 @@ class HybridScheduler {
     if (metrics == null) return null;
 
     // Check if this goal qualifies for habit locking
-    final hasEstablishedHabit = metrics.currentStreak >= habitLockThreshold &&
+    final hasEstablishedHabit =
+        metrics.currentStreak >= habitLockThreshold &&
         metrics.timeConsistency >= highConsistencyThreshold &&
         metrics.stickyHour != null;
 
     if (!hasEstablishedHabit) return null;
 
-    print('      🔒 Goal has established habit (${metrics.currentStreak} day streak)');
-    print('         Sticky hour: ${metrics.stickyHour}:00, consistency: ${(metrics.timeConsistency * 100).toInt()}%');
-
     // Try to schedule at the sticky hour
     final stickyHour = metrics.stickyHour!;
-    final freeSlots = ruleBasedScheduler.getFreeSlots(availableSlots, usedSlots);
-    final requiredMinutes = goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes;
+    final freeSlots = ruleBasedScheduler.getFreeSlots(
+      availableSlots,
+      usedSlots,
+    );
+    final requiredMinutes =
+        goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes;
 
     // Helper to check if a slot contains a target hour and create a slot starting at that hour
-    TimeSlot? _findSlotAtHour(List<TimeSlot> slots, int targetHour) {
+    TimeSlot? findSlotAtHour(List<TimeSlot> slots, int targetHour) {
       for (final slot in slots) {
         // Check if the target hour falls within this slot
-        final targetTime = DateTime(date.year, date.month, date.day, targetHour, 0);
+        final targetTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          targetHour,
+          0,
+        );
         final targetEnd = targetTime.add(Duration(minutes: requiredMinutes));
-        
-        if (!targetTime.isBefore(slot.start) && 
-            !targetEnd.isAfter(slot.end)) {
+
+        if (!targetTime.isBefore(slot.start) && !targetEnd.isAfter(slot.end)) {
           // Target hour is within this slot and there's enough time
           return TimeSlot(targetTime, slot.end);
         }
@@ -235,9 +208,8 @@ class HybridScheduler {
     }
 
     // First try exact sticky hour
-    final stickySlot = _findSlotAtHour(freeSlots, stickyHour);
+    final stickySlot = findSlotAtHour(freeSlots, stickyHour);
     if (stickySlot != null) {
-      print('      ✅ Locked to sticky hour ${stickyHour}:00');
       return _createScheduledTask(
         goal: goal,
         date: date,
@@ -252,9 +224,8 @@ class HybridScheduler {
       final tryHour = stickyHour + offset;
       if (tryHour < 0 || tryHour > 23) continue;
 
-      final adjacentSlot = _findSlotAtHour(freeSlots, tryHour);
+      final adjacentSlot = findSlotAtHour(freeSlots, tryHour);
       if (adjacentSlot != null) {
-        print('      ⚠️  Sticky hour unavailable, using ${tryHour}:00 (±${offset.abs()}h)');
         return _createScheduledTask(
           goal: goal,
           date: date,
@@ -265,7 +236,6 @@ class HybridScheduler {
       }
     }
 
-    print('      ⚠️  Could not schedule near sticky hour');
     return null;
   }
 
@@ -287,8 +257,6 @@ class HybridScheduler {
 
     if (result == null) return null;
 
-    print('      📊 Profile score: ${result.score.toStringAsFixed(2)}');
-    
     // Apply habit protection for at-risk streaks
     final adjustedSlot = await _applyStreakProtection(
       goal: goal,
@@ -325,18 +293,27 @@ class HybridScheduler {
 
     // If we have a sticky hour that works, prefer it
     if (metrics.stickyHour != null) {
-      final freeSlots = ruleBasedScheduler.getFreeSlots(availableSlots, usedSlots);
+      final freeSlots = ruleBasedScheduler.getFreeSlots(
+        availableSlots,
+        usedSlots,
+      );
       final stickyHour = metrics.stickyHour!;
-      final requiredMinutes = goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes;
-      
+      final requiredMinutes =
+          goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes;
+
       for (final freeSlot in freeSlots) {
         // Check if the sticky hour falls within this slot
-        final targetTime = DateTime(date.year, date.month, date.day, stickyHour, 0);
+        final targetTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          stickyHour,
+          0,
+        );
         final targetEnd = targetTime.add(Duration(minutes: requiredMinutes));
-        
-        if (!targetTime.isBefore(freeSlot.start) && 
+
+        if (!targetTime.isBefore(freeSlot.start) &&
             !targetEnd.isAfter(freeSlot.end)) {
-          print('      🔥 Protecting ${metrics.currentStreak}-day streak, using sticky hour');
           return TimeSlot(targetTime, freeSlot.end);
         }
       }
@@ -387,10 +364,6 @@ class HybridScheduler {
     if (bestSlot == null || bestPrediction == null) {
       return null;
     }
-
-    print(
-      '      📈 ML Prediction: score=${bestPrediction.score.toStringAsFixed(2)}, confidence=${bestPrediction.confidence.toStringAsFixed(2)}',
-    );
 
     // Create scheduled task with ML metadata
     return _createScheduledTask(
@@ -460,7 +433,7 @@ class HybridScheduler {
 
     final goalsForDate = allGoals.where((goal) {
       if (goal.frequency.isEmpty) return false;
-      
+
       // Don't schedule goals created after this date
       final goalCreatedDate = DateTime(
         goal.createdAt.year,
@@ -468,7 +441,7 @@ class HybridScheduler {
         goal.createdAt.day,
       );
       if (goalCreatedDate.isAfter(dateOnly)) return false;
-      
+
       final dayOfWeek = date.weekday - 1;
       return goal.frequency.contains(dayOfWeek);
     }).toList();
@@ -489,16 +462,12 @@ class HybridScheduler {
     DateTime date,
     List<ScheduledTask> existingTasks,
   ) async {
-    print('   🎯 Incremental scheduling: ${goal.title}');
-
     // Get blockers (one-time tasks)
     final blockers = await _getBlockersForDate(date);
 
     // Calculate available slots, treating existing tasks as blockers too
-    final availableSlots = await ruleBasedScheduler.calculateAvailableSlotsAsync(
-      date,
-      blockers,
-    );
+    final availableSlots = await ruleBasedScheduler
+        .calculateAvailableSlotsAsync(date, blockers);
 
     // Convert existing tasks to used slots
     final usedSlots = <TimeSlot>[];
@@ -521,30 +490,27 @@ class HybridScheduler {
 
   /// Regenerate schedule for a date (preserves rescheduled tasks)
   Future<List<ScheduledTask>> regenerateScheduleForDate(DateTime date) async {
-    print('🔄 Regenerating schedule (Hybrid)...');
-
     // Delete existing auto-generated tasks (but NOT rescheduled ones!)
-    final deleted = await scheduledTaskRepository
-        .deleteAutoGeneratedTasksForDate(date);
-    print('   🗑️  Deleted $deleted auto-generated tasks (preserved rescheduled)');
+    await scheduledTaskRepository.deleteAutoGeneratedTasksForDate(date);
 
     // Get rescheduled tasks to treat as blockers
-    final rescheduledTasks = await scheduledTaskRepository.getRescheduledTasksForDate(date);
-    print('   🔒 Preserving ${rescheduledTasks.length} rescheduled tasks');
+    final rescheduledTasks = await scheduledTaskRepository
+        .getRescheduledTasksForDate(date);
 
     // Generate new schedule
     final newTasks = await scheduleForDate(date);
 
     // Filter out goals that already have rescheduled tasks
     final rescheduledGoalIds = rescheduledTasks.map((t) => t.goalId).toSet();
-    final tasksToSave = newTasks.where((t) => !rescheduledGoalIds.contains(t.goalId)).toList();
+    final tasksToSave = newTasks
+        .where((t) => !rescheduledGoalIds.contains(t.goalId))
+        .toList();
 
     // Save to database
     for (final task in tasksToSave) {
       await scheduledTaskRepository.createScheduledTask(task);
     }
 
-    print('   ✅ Regeneration complete: ${tasksToSave.length} tasks created\n');
     return [...rescheduledTasks, ...tasksToSave];
   }
 
@@ -555,15 +521,17 @@ class HybridScheduler {
     // Count how many goals have ML data
     int goalsWithMLData = 0;
     int goalsWithEstablishedHabits = 0;
-    
+
     for (final goal in goals) {
       if (await mlPredictor.hasEnoughData(goal.id)) {
         goalsWithMLData++;
       }
-      
+
       if (habitMetricsRepository != null) {
-        final metrics = await habitMetricsRepository!.getMetricsForGoal(goal.id);
-        if (metrics != null && 
+        final metrics = await habitMetricsRepository!.getMetricsForGoal(
+          goal.id,
+        );
+        if (metrics != null &&
             metrics.currentStreak >= habitLockThreshold &&
             metrics.timeConsistency >= highConsistencyThreshold) {
           goalsWithEstablishedHabits++;
@@ -573,7 +541,7 @@ class HybridScheduler {
 
     final baseStats = await ruleBasedScheduler.getSchedulingStats(date);
     final profileAvailable = await _isProfileAvailable();
-    
+
     // Get dynamic window info if available
     Map<String, dynamic>? dynamicWindowInfo;
     if (dynamicTimeWindowService != null) {
