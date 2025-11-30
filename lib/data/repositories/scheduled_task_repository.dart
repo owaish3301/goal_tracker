@@ -7,7 +7,21 @@ class ScheduledTaskRepository {
   ScheduledTaskRepository(this.isar);
 
   // Create a new scheduled task
-  Future<int> createScheduledTask(ScheduledTask task) async {
+  // By default this allows duplicates (preserves existing test behavior).
+  // When called with `allowDuplicates: false` the method will perform an
+  // existence check inside the same Isar write transaction to avoid
+  // race-conditions that create duplicate tasks for the same goal+date.
+  Future<int> createScheduledTask(ScheduledTask task, {bool allowDuplicates = true}) async {
+    if (!allowDuplicates) {
+      return await isar.writeTxn(() async {
+        final existing = await getTaskForGoalOnDate(task.goalId, task.scheduledDate);
+        if (existing != null) {
+          return existing.id;
+        }
+        return await isar.scheduledTasks.put(task);
+      });
+    }
+
     return await isar.writeTxn(() async {
       return await isar.scheduledTasks.put(task);
     });

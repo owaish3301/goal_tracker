@@ -32,7 +32,7 @@ final generateScheduleProvider =
         // Check if task for this goal already exists (could have been created by another caller)
         final existingForGoal = await repo.getTaskForGoalOnDate(task.goalId, date);
         if (existingForGoal == null) {
-          await repo.createScheduledTask(task);
+          await repo.createScheduledTask(task, allowDuplicates: false);
           savedTasks.add(task);
         } else {
           savedTasks.add(existingForGoal);

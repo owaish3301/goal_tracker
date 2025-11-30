@@ -339,7 +339,7 @@ class RuleBasedScheduler {
 
     // Save to database
     for (final task in newTasks) {
-      await scheduledTaskRepository.createScheduledTask(task);
+      await scheduledTaskRepository.createScheduledTask(task, allowDuplicates: false);
     }
 
     return newTasks;

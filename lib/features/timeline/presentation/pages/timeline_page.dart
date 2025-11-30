@@ -63,7 +63,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       for (final task in newTasks) {
         final existingForGoal = await repo.getTaskForGoalOnDate(task.goalId, normalized);
         if (existingForGoal == null) {
-          await repo.createScheduledTask(task);
+          await repo.createScheduledTask(task, allowDuplicates: false);
         }
       }
 
@@ -140,7 +140,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         existingTasks,
       );
       if (task != null) {
-        await repo.createScheduledTask(task);
+        await repo.createScheduledTask(task, allowDuplicates: false);
         existingTasks.add(task); // Add to list so next goal sees it as blocker
       }
     }

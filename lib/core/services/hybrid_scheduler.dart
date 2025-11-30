@@ -508,7 +508,7 @@ class HybridScheduler {
 
     // Save to database
     for (final task in tasksToSave) {
-      await scheduledTaskRepository.createScheduledTask(task);
+      await scheduledTaskRepository.createScheduledTask(task, allowDuplicates: false);
     }
 
     return [...rescheduledTasks, ...tasksToSave];
