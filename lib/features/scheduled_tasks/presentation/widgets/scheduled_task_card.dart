@@ -6,6 +6,8 @@ import '../../../../core/providers/productivity_providers.dart';
 import '../../../../core/services/database_service.dart';
 import '../../../goals/presentation/providers/habit_metrics_provider.dart';
 import '../../../goals/presentation/widgets/streak_badge.dart';
+import '../providers/scheduled_task_providers.dart';
+import '../../../timeline/presentation/providers/timeline_providers.dart';
 
 import 'task_completion_modal.dart';
 
@@ -225,6 +227,15 @@ class ScheduledTaskCard extends ConsumerWidget {
             productivityRating: rating,
             notes: notes,
           );
+
+          // Invalidate streak provider for instant UI update
+          ref.invalidate(goalStreakStatusProvider(task.goalId));
+          ref.invalidate(allGoalStreaksProvider);
+          ref.invalidate(goalsAtRiskProvider);
+          
+          // Invalidate timeline to show updated task state
+          ref.invalidate(scheduledTasksForDateProvider(task.scheduledDate));
+          ref.invalidate(unifiedTimelineProvider(task.scheduledDate));
 
           // Notify parent
           onCompleted?.call();
