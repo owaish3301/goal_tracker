@@ -10,6 +10,8 @@ class GoalCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final int? currentStreak;
   final bool isStreakAtRisk;
+  final int? priorityIndex; // 1-based priority number for display
+  final Widget? dragHandle; // Custom drag handle widget
 
   const GoalCard({
     super.key,
@@ -18,6 +20,8 @@ class GoalCard extends StatelessWidget {
     this.onDelete,
     this.currentStreak,
     this.isStreakAtRisk = false,
+    this.priorityIndex,
+    this.dragHandle,
   });
 
   // Cache color parsing - computed once per goal
@@ -46,6 +50,11 @@ class GoalCard extends StatelessWidget {
             ),
             child: Row(
               children: [
+                // Priority badge (if provided)
+                if (priorityIndex != null) ...[
+                  _PriorityBadge(priority: priorityIndex!),
+                  const SizedBox(width: 12),
+                ],
                 _GoalIconBadge(color: color, icon: icon),
                 const SizedBox(width: 16),
                 Expanded(
@@ -82,7 +91,8 @@ class GoalCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.drag_handle, color: AppColors.textSecondary),
+                // Use custom drag handle if provided, otherwise show default
+                dragHandle ?? const Icon(Icons.drag_handle, color: AppColors.textSecondary),
               ],
             ),
           ),
@@ -241,5 +251,34 @@ class _DurationLabel extends StatelessWidget {
     } else {
       return '${mins}m';
     }
+  }
+}
+
+// Priority badge widget showing 1-based priority number
+class _PriorityBadge extends StatelessWidget {
+  final int priority;
+
+  const _PriorityBadge({required this.priority});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          '#$priority',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
+      ),
+    );
   }
 }

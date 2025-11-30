@@ -62,6 +62,7 @@ class GoalsPage extends ConsumerWidget {
             child: ReorderableListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: goals.length,
+              buildDefaultDragHandles: false, // We'll use custom drag handles
               onReorder: (oldIndex, newIndex) {
                 final items = List.of(goals);
                 if (newIndex > oldIndex) {
@@ -71,6 +72,23 @@ class GoalsPage extends ConsumerWidget {
                 items.insert(newIndex, item);
                 goalNotifier.reorderGoals(items);
               },
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    final double elevation = Tween<double>(begin: 0, end: 6)
+                        .evaluate(animation);
+                    return Material(
+                      elevation: elevation,
+                      color: Colors.transparent,
+                      shadowColor: AppColors.primary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(32),
+                      child: child,
+                    );
+                  },
+                  child: child,
+                );
+              },
               itemBuilder: (context, index) {
                 final goal = goals[index];
                 return Padding(
@@ -78,12 +96,20 @@ class GoalsPage extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: GoalCard(
                     goal: goal,
+                    priorityIndex: index + 1, // 1-based priority display
                     onTap: () {
                       context.push('/goals/${goal.id}/edit');
                     },
                     onDelete: () {
                       goalNotifier.deleteGoal(goal.id);
                     },
+                    dragHandle: ReorderableDragStartListener(
+                      index: index,
+                      child: const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Icon(Icons.drag_handle, color: AppColors.textSecondary),
+                      ),
+                    ),
                   ),
                 );
               },
