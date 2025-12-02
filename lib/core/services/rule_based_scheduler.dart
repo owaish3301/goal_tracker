@@ -235,25 +235,32 @@ class RuleBasedScheduler {
     required List<TimeSlot> availableSlots,
     required List<TimeSlot> usedSlots,
   }) {
-    final requiredMinutes = goal.targetDuration + minTaskGapMinutes;
+    final requiredWithGap = goal.targetDuration + minTaskGapMinutes;
+    final requiredWithoutGap = goal.targetDuration;
 
     // Get truly available slots (excluding used portions)
     final freeSlots = getFreeSlots(availableSlots, usedSlots);
 
     // Priority-based slot selection
+    TimeSlot? result;
     if (goal.priorityIndex < 3) {
       // High priority → Morning (6 AM - 12 PM)
-      return _findSlotInTimeRange(freeSlots, 6, 12, requiredMinutes) ??
-          _findFirstFittingSlot(freeSlots, requiredMinutes);
+      result = _findSlotInTimeRange(freeSlots, 6, 12, requiredWithGap) ??
+          _findFirstFittingSlot(freeSlots, requiredWithGap);
     } else if (goal.priorityIndex < 6) {
       // Medium priority → Afternoon (12 PM - 6 PM)
-      return _findSlotInTimeRange(freeSlots, 12, 18, requiredMinutes) ??
-          _findFirstFittingSlot(freeSlots, requiredMinutes);
+      result = _findSlotInTimeRange(freeSlots, 12, 18, requiredWithGap) ??
+          _findFirstFittingSlot(freeSlots, requiredWithGap);
     } else {
       // Low priority → Evening (6 PM - 11 PM)
-      return _findSlotInTimeRange(freeSlots, 18, 23, requiredMinutes) ??
-          _findFirstFittingSlot(freeSlots, requiredMinutes);
+      result = _findSlotInTimeRange(freeSlots, 18, 23, requiredWithGap) ??
+          _findFirstFittingSlot(freeSlots, requiredWithGap);
     }
+    
+    // If no slot found with gap, try without gap (for tight schedules / end of day)
+    result ??= _findFirstFittingSlot(freeSlots, requiredWithoutGap);
+    
+    return result;
   }
 
   /// Get free slots by subtracting used slots from available slots (PUBLIC)
