@@ -1,14 +1,21 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/database_service.dart';
+import 'core/services/background_schedule_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize database
   await DatabaseService.initialize();
+
+  // Initialize background schedule service (Android only)
+  if (Platform.isAndroid) {
+    await BackgroundScheduleService().initialize();
+  }
 
   runApp(const ProviderScope(child: MainApp()));
 }

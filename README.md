@@ -78,6 +78,39 @@ See [DEVELOPMENT_PHASES.md](DEVELOPMENT_PHASES.md) for detailed roadmap.
 - **Adaptive Learning:** App learns when you're most productive for each goal
 - **Privacy-First:** All data stays on your device, no cloud sync
 - **Beautiful UI:** Dark mode with neon accents and smooth animations
+- **Background Scheduling:** Automatic schedule generation at midnight (Android)
+
+## 📋 TODO
+
+### iOS Background Scheduling
+The background schedule generation feature is currently Android-only. To implement for iOS:
+
+1. Add `BGTaskScheduler` configuration in `Info.plist`:
+   ```xml
+   <key>BGTaskSchedulerPermittedIdentifiers</key>
+   <array>
+     <string>com.goaltracker.midnightSchedule</string>
+   </array>
+   <key>UIBackgroundModes</key>
+   <array>
+     <string>fetch</string>
+     <string>processing</string>
+   </array>
+   ```
+
+2. Register background task in `AppDelegate.swift`:
+   ```swift
+   BGTaskScheduler.shared.register(
+     forTaskWithIdentifier: "com.goaltracker.midnightSchedule",
+     using: nil
+   ) { task in
+     // Handle background task
+   }
+   ```
+
+3. Update `BackgroundScheduleService` to handle iOS using `workmanager_apple`
+
+4. Request notification permissions for iOS in `_initializeNotifications()`
 
 ## 🛠️ Tech Stack
 

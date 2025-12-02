@@ -105,6 +105,9 @@ class RuleBasedScheduler {
 
     // Filter goals by frequency and creation date
     final goalsForDate = allGoals.where((goal) {
+      // Only schedule active goals
+      if (!goal.isActive) return false;
+      
       // Don't schedule goals created after this date
       final goalCreatedDate = DateTime(
         goal.createdAt.year,
