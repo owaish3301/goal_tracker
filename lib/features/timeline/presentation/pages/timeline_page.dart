@@ -32,17 +32,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
     // Trigger auto-generation on page load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Re-calculate today in case midnight passed during app startup
-      final currentNow = DateTime.now();
-      final currentToday = DateTime(currentNow.year, currentNow.month, currentNow.day);
-      
-      // If selectedDate is now in the past (midnight crossed), update it
-      if (selectedDate.isBefore(currentToday)) {
-        setState(() {
-          selectedDate = currentToday;
-        });
-      }
-      
       _generateScheduleIfNeeded(selectedDate);
     });
   }
@@ -50,42 +39,37 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   /// Generate schedule only for TODAY (not future dates)
   /// Future dates show previews only, schedule is generated at midnight
   Future<void> _generateScheduleIfNeeded(DateTime date) async {
-    try {
-      final normalized = DateTime(date.year, date.month, date.day);
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
+    final normalized = DateTime(date.year, date.month, date.day);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
-      // Only generate schedules for today or past dates, NOT future dates
-      // Future dates will show goal previews instead
-      if (normalized.isAfter(today)) {
-        return;
-      }
+    // Only generate schedules for today or past dates, NOT future dates
+    // Future dates will show goal previews instead
+    if (normalized.isAfter(today)) {
+      return;
+    }
 
-      // Check if schedule exists
-      final repo = ref.read(scheduledTaskRepositoryProvider);
-      final existing = await repo.getScheduledTasksForDate(normalized);
+    // Check if schedule exists
+    final repo = ref.read(scheduledTaskRepositoryProvider);
+    final existing = await repo.getScheduledTasksForDate(normalized);
 
-      if (existing.isEmpty) {
-        // Generate new schedule
-        final hybridScheduler = ref.read(hybridSchedulerProvider);
-        final newTasks = await hybridScheduler.scheduleForDate(normalized);
+    if (existing.isEmpty) {
+      // Generate new schedule
+      final hybridScheduler = ref.read(hybridSchedulerProvider);
+      final newTasks = await hybridScheduler.scheduleForDate(normalized);
 
-        // Save to database, checking for duplicates before each save
-        // This handles race conditions where multiple callers try to generate simultaneously
-        for (final task in newTasks) {
-          final existingForGoal = await repo.getTaskForGoalOnDate(task.goalId, normalized);
-          if (existingForGoal == null) {
-            await repo.createScheduledTask(task, allowDuplicates: false);
-          }
+      // Save to database, checking for duplicates before each save
+      // This handles race conditions where multiple callers try to generate simultaneously
+      for (final task in newTasks) {
+        final existingForGoal = await repo.getTaskForGoalOnDate(task.goalId, normalized);
+        if (existingForGoal == null) {
+          await repo.createScheduledTask(task, allowDuplicates: false);
         }
-
-        // Refresh UI
-        ref.invalidate(scheduledTasksForDateProvider(normalized));
-        ref.invalidate(unifiedTimelineProvider(normalized));
       }
-    } catch (e) {
-      // Log error for debugging - schedule generation failed silently before
-      debugPrint('Error generating schedule: $e');
+
+      // Refresh UI
+      ref.invalidate(scheduledTasksForDateProvider(normalized));
+      ref.invalidate(unifiedTimelineProvider(normalized));
     }
   }
 
@@ -224,14 +208,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Schedule'),
-        leading: IconButton(
-          icon: const Icon(Icons.checklist_rounded),
-          onPressed: () {
-            context.push('/goals');
-          },
-          tooltip: 'Manage Goals',
-        ),
+        title: const Text('Today'),
         actions: const [
           CircleAvatar(
             backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=32'),

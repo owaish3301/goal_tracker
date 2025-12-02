@@ -5,11 +5,14 @@ import '../../../scheduled_tasks/presentation/providers/scheduled_task_providers
 import '../../../goals/presentation/providers/goal_provider.dart';
 
 /// Provider that merges OneTimeTasks and ScheduledTasks into a unified timeline
-/// For dates without schedules (including today), shows goal previews (names only, no times)
+/// For future dates without schedules, shows goal previews (names only, no times)
 final unifiedTimelineProvider =
     FutureProvider.family<List<TimelineItem>, DateTime>((ref, date) async {
       // Normalize the date
       final normalizedDate = DateTime(date.year, date.month, date.day);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final isFutureDate = normalizedDate.isAfter(today);
 
       // Get both types of tasks
       final oneTimeTasks = await ref.watch(tasksForDateProvider(date).future);
@@ -23,9 +26,8 @@ final unifiedTimelineProvider =
         ...scheduledTasks.map((task) => TimelineItem.fromScheduledTask(task)),
       ];
 
-      // For any date with no scheduled tasks, show goal previews as fallback
-      // This ensures users see their goals even if schedule generation failed
-      if (scheduledTasks.isEmpty) {
+      // For future dates with no scheduled tasks, show goal previews
+      if (isFutureDate && scheduledTasks.isEmpty) {
         final goals = await ref.watch(goalsProvider.future);
         
         // Filter goals active on this day

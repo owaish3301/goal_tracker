@@ -432,9 +432,6 @@ class HybridScheduler {
     final dateOnly = DateTime(date.year, date.month, date.day);
 
     final goalsForDate = allGoals.where((goal) {
-      // Only schedule active goals
-      if (!goal.isActive) return false;
-      
       if (goal.frequency.isEmpty) return false;
 
       // Don't schedule goals created after this date
