@@ -365,7 +365,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.textInversePrimary.withValues(alpha: 0.2)
