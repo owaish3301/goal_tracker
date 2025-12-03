@@ -12,7 +12,7 @@ class DailyActivityLogRepository {
   /// Get or create a log for a specific date
   Future<DailyActivityLog> getOrCreateForDate(DateTime date) async {
     final normalized = DateTime(date.year, date.month, date.day);
-    
+
     var log = await _isar.dailyActivityLogs
         .filter()
         .dateEqualTo(normalized)
@@ -70,76 +70,95 @@ class DailyActivityLogRepository {
   // === Wake/Sleep Pattern Analysis ===
 
   /// Calculate average wake hour for weekdays
-  Future<int?> getAverageWeekdayWakeHour({int lookbackDays = 14}) async {
+  Future<(int?, int)> getAverageWeekdayWakeHour({int lookbackDays = 14}) async {
     final logs = await getRecentLogs(days: lookbackDays);
-    final weekdayLogs = logs.where(
-      (l) => !l.isWeekend && l.firstActivityAt != null,
-    ).toList();
+    final weekdayLogs = logs
+        .where((l) => !l.isWeekend && l.firstActivityAt != null)
+        .toList();
 
-    if (weekdayLogs.isEmpty) return null;
+    if (weekdayLogs.isEmpty) return (null, 0);
 
     final totalHours = weekdayLogs.fold<int>(
       0,
       (sum, log) => sum + log.firstActivityAt!.hour,
     );
-    return (totalHours / weekdayLogs.length).round();
+    return ((totalHours / weekdayLogs.length).round(), weekdayLogs.length);
   }
 
   /// Calculate average wake hour for weekends
-  Future<int?> getAverageWeekendWakeHour({int lookbackDays = 14}) async {
+  Future<(int?, int)> getAverageWeekendWakeHour({int lookbackDays = 14}) async {
     final logs = await getRecentLogs(days: lookbackDays);
-    final weekendLogs = logs.where(
-      (l) => l.isWeekend && l.firstActivityAt != null,
-    ).toList();
+    final weekendLogs = logs
+        .where((l) => l.isWeekend && l.firstActivityAt != null)
+        .toList();
 
-    if (weekendLogs.isEmpty) return null;
+    if (weekendLogs.isEmpty) return (null, 0);
 
     final totalHours = weekendLogs.fold<int>(
       0,
       (sum, log) => sum + log.firstActivityAt!.hour,
     );
-    return (totalHours / weekendLogs.length).round();
+    return ((totalHours / weekendLogs.length).round(), weekendLogs.length);
   }
 
   /// Calculate average sleep hour for weekdays
-  Future<int?> getAverageWeekdaySleepHour({int lookbackDays = 14}) async {
+  Future<(int?, int)> getAverageWeekdaySleepHour({
+    int lookbackDays = 14,
+  }) async {
     final logs = await getRecentLogs(days: lookbackDays);
-    final weekdayLogs = logs.where(
-      (l) => !l.isWeekend && l.lastActivityAt != null,
-    ).toList();
+    final weekdayLogs = logs
+        .where((l) => !l.isWeekend && l.lastActivityAt != null)
+        .toList();
 
-    if (weekdayLogs.isEmpty) return null;
+    if (weekdayLogs.isEmpty) return (null, 0);
 
     final totalHours = weekdayLogs.fold<int>(
       0,
       (sum, log) => sum + log.lastActivityAt!.hour,
     );
-    return (totalHours / weekdayLogs.length).round();
+    return ((totalHours / weekdayLogs.length).round(), weekdayLogs.length);
   }
 
   /// Calculate average sleep hour for weekends
-  Future<int?> getAverageWeekendSleepHour({int lookbackDays = 14}) async {
+  Future<(int?, int)> getAverageWeekendSleepHour({
+    int lookbackDays = 14,
+  }) async {
     final logs = await getRecentLogs(days: lookbackDays);
-    final weekendLogs = logs.where(
-      (l) => l.isWeekend && l.lastActivityAt != null,
-    ).toList();
+    final weekendLogs = logs
+        .where((l) => l.isWeekend && l.lastActivityAt != null)
+        .toList();
 
-    if (weekendLogs.isEmpty) return null;
+    if (weekendLogs.isEmpty) return (null, 0);
 
     final totalHours = weekendLogs.fold<int>(
       0,
       (sum, log) => sum + log.lastActivityAt!.hour,
     );
-    return (totalHours / weekendLogs.length).round();
+    return ((totalHours / weekendLogs.length).round(), weekendLogs.length);
   }
 
   /// Get learned activity patterns
   Future<ActivityPatterns> getActivityPatterns({int lookbackDays = 14}) async {
+    final (weekdayWake, weekdayWakeCount) = await getAverageWeekdayWakeHour(
+      lookbackDays: lookbackDays,
+    );
+    final (weekendWake, weekendWakeCount) = await getAverageWeekendWakeHour(
+      lookbackDays: lookbackDays,
+    );
+    final (weekdaySleep, _) = await getAverageWeekdaySleepHour(
+      lookbackDays: lookbackDays,
+    );
+    final (weekendSleep, _) = await getAverageWeekendSleepHour(
+      lookbackDays: lookbackDays,
+    );
+
     return ActivityPatterns(
-      weekdayWakeHour: await getAverageWeekdayWakeHour(lookbackDays: lookbackDays),
-      weekendWakeHour: await getAverageWeekendWakeHour(lookbackDays: lookbackDays),
-      weekdaySleepHour: await getAverageWeekdaySleepHour(lookbackDays: lookbackDays),
-      weekendSleepHour: await getAverageWeekendSleepHour(lookbackDays: lookbackDays),
+      weekdayWakeHour: weekdayWake,
+      weekendWakeHour: weekendWake,
+      weekdaySleepHour: weekdaySleep,
+      weekendSleepHour: weekendSleep,
+      weekdayDataPoints: weekdayWakeCount,
+      weekendDataPoints: weekendWakeCount,
     );
   }
 
@@ -180,7 +199,11 @@ class DailyActivityLogRepository {
   /// Delete old logs (keep last N days)
   Future<int> deleteOldLogs({int keepDays = 90}) async {
     final cutoffDate = DateTime.now().subtract(Duration(days: keepDays));
-    final normalized = DateTime(cutoffDate.year, cutoffDate.month, cutoffDate.day);
+    final normalized = DateTime(
+      cutoffDate.year,
+      cutoffDate.month,
+      cutoffDate.day,
+    );
 
     return await _isar.writeTxn(() async {
       return await _isar.dailyActivityLogs
@@ -197,12 +220,16 @@ class ActivityPatterns {
   final int? weekendWakeHour;
   final int? weekdaySleepHour;
   final int? weekendSleepHour;
+  final int weekdayDataPoints;
+  final int weekendDataPoints;
 
   ActivityPatterns({
     this.weekdayWakeHour,
     this.weekendWakeHour,
     this.weekdaySleepHour,
     this.weekendSleepHour,
+    this.weekdayDataPoints = 0,
+    this.weekendDataPoints = 0,
   });
 
   /// Get effective wake hour for a given date
@@ -218,13 +245,15 @@ class ActivityPatterns {
   }
 
   /// Check if we have enough data for patterns
-  bool get hasWeekdayPattern => weekdayWakeHour != null && weekdaySleepHour != null;
-  bool get hasWeekendPattern => weekendWakeHour != null && weekendSleepHour != null;
+  bool get hasWeekdayPattern =>
+      weekdayWakeHour != null && weekdaySleepHour != null;
+  bool get hasWeekendPattern =>
+      weekendWakeHour != null && weekendSleepHour != null;
   bool get hasAnyPattern => hasWeekdayPattern || hasWeekendPattern;
 
   @override
   String toString() {
-    return 'ActivityPatterns(weekday: $weekdayWakeHour-$weekdaySleepHour, '
-        'weekend: $weekendWakeHour-$weekendSleepHour)';
+    return 'ActivityPatterns(weekday: $weekdayWakeHour-$weekdaySleepHour ($weekdayDataPoints), '
+        'weekend: $weekendWakeHour-$weekendSleepHour ($weekendDataPoints))';
   }
 }

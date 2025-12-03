@@ -13,10 +13,11 @@ import 'profile_based_scheduler.dart';
 import 'dynamic_time_window_service.dart';
 
 /// Three-tier hybrid scheduler with habit formation overlay
-/// Tier 1: ML-based (if ≥10 data points, ≥60% confidence)
-/// Tier 2: Profile-based (if onboarding completed)
-/// Tier 3: Rule-based (fallback)
-/// Overlay: Habit formation (sticky times, streak protection)
+/// Smart v2: Uses "Score & Pick" architecture
+/// 1. Get all valid time slots
+/// 2. Score them (Profile + ML Boost)
+/// 3. Pick the winner
+/// 4. Apply "Buffer Squeeze" if needed
 class HybridScheduler {
   final Isar isar;
   final GoalRepository goalRepository;
@@ -74,16 +75,32 @@ class HybridScheduler {
     final blockers = await _getBlockersForDate(date);
 
     // Calculate available slots using dynamic wake/sleep times
-    final availableSlots = await ruleBasedScheduler
-        .calculateAvailableSlotsAsync(date, blockers);
+    List<TimeSlot> availableSlots;
+    if (dynamicTimeWindowService != null) {
+      final window = await dynamicTimeWindowService!.getTimeWindowForDate(date);
+
+      // Subtract blockers from this window using RuleBasedScheduler
+      availableSlots = ruleBasedScheduler.calculateAvailableSlots(
+        date,
+        blockers,
+        startHour: window.wakeHour,
+        endHour: window.sleepHour,
+      );
+    } else {
+      // Fallback to rule-based default
+      availableSlots = await ruleBasedScheduler.calculateAvailableSlotsAsync(
+        date,
+        blockers,
+      );
+    }
 
     // Schedule each goal using hybrid approach
     final scheduledTasks = <ScheduledTask>[];
     final usedSlots = <TimeSlot>[];
 
     for (final goal in goals) {
-      // Try ML-based scheduling first
-      final task = await _scheduleGoalHybrid(
+      // Use Smart Scheduling (Score & Pick)
+      final task = await _scheduleGoalSmart(
         goal: goal,
         date: date,
         availableSlots: availableSlots,
@@ -92,25 +109,31 @@ class HybridScheduler {
 
       if (task != null) {
         scheduledTasks.add(task);
-        ruleBasedScheduler.markSlotAsUsed(task, usedSlots);
+        // Store EXACT duration in usedSlots (no buffer baked in)
+        // This allows the next task to decide whether to squeeze or not
+        usedSlots.add(
+          TimeSlot(
+            task.scheduledStartTime,
+            task.scheduledStartTime.add(Duration(minutes: task.duration)),
+          ),
+        );
       }
     }
 
     return scheduledTasks;
   }
 
-  /// Schedule a goal using three-tier hybrid approach with habit overlay
-  /// Tier 1: ML-based (if ≥10 data, ≥60% confidence)
-  /// Tier 2: Profile-based (if onboarding completed)
-  /// Tier 3: Rule-based (fallback)
-  /// Overlay: Habit formation (sticky times for consistent goals)
-  Future<ScheduledTask?> _scheduleGoalHybrid({
+  /// Schedule a goal using "Score & Pick" logic
+  /// 1. Score all slots (Profile + ML)
+  /// 2. Pick best
+  /// 3. If no fit, try Buffer Squeeze
+  Future<ScheduledTask?> _scheduleGoalSmart({
     required Goal goal,
     required DateTime date,
     required List<TimeSlot> availableSlots,
     required List<TimeSlot> usedSlots,
   }) async {
-    // Check habit formation overlay first (21+ day streaks get locked times)
+    // 0. Check habit formation overlay first (Locked times)
     final habitTask = await _tryHabitLockedScheduling(
       goal: goal,
       date: date,
@@ -121,40 +144,115 @@ class HybridScheduler {
       return habitTask;
     }
 
-    // Tier 1: Try ML-based scheduling
+    // 1. Get Scores from ProfileBasedScheduler (The Base Truth)
+    List<TimeSlotScore> scores = [];
+    if (await _isProfileAvailable()) {
+      scores = await profileBasedScheduler!.scoreAllSlots(
+        goal: goal,
+        date: date,
+        availableSlots: availableSlots,
+        usedSlots: usedSlots,
+      );
+    }
+
+    // 2. Apply ML Boosts (The "Smart" Layer)
     final hasMLData = await mlPredictor.hasEnoughData(goal.id);
     if (hasMLData) {
-      final mlTask = await _scheduleWithML(
-        goal: goal,
-        date: date,
-        availableSlots: availableSlots,
-        usedSlots: usedSlots,
-      );
-      if (mlTask != null) {
-        return mlTask;
-      }
+      scores = await _applyMLBoosts(scores, goal, date);
     }
 
-    // Tier 2: Try Profile-based scheduling
+    // 3. Pick the Winner
+    if (scores.isNotEmpty) {
+      // Sort by score descending
+      scores.sort((a, b) => b.score.compareTo(a.score));
+      final best = scores.first;
+
+      return _createScheduledTask(
+        goal: goal,
+        date: date,
+        slot: best.slot,
+        method: 'smart-v2', // Combined Profile + ML
+        mlConfidence: hasMLData ? 0.8 : null, // Placeholder confidence
+      );
+    }
+
+    // 4. Buffer Squeeze (The "Fix" for the 15m gap issue)
+    // If we couldn't fit it normally, try squeezing the buffer
     if (await _isProfileAvailable()) {
-      final profileTask = await _scheduleWithProfile(
+      final squeezedScores = await profileBasedScheduler!.scoreAllSlots(
+        goal: goal,
+        date: date,
+        availableSlots: availableSlots,
+        usedSlots: usedSlots,
+        squeezeBuffer: true, // Enable squeeze
+      );
+
+      if (squeezedScores.isNotEmpty) {
+        squeezedScores.sort((a, b) => b.score.compareTo(a.score));
+        final best = squeezedScores.first;
+
+        return _createScheduledTask(
+          goal: goal,
+          date: date,
+          slot: best.slot,
+          method: 'smart-v2-squeezed',
+          mlConfidence: null,
+        );
+      }
+    }
+
+    // 5. Fallback to Rule-Based (Legacy)
+    // Only if profile wasn't available or somehow failed completely
+    if (scores.isEmpty) {
+      return _scheduleWithRules(
         goal: goal,
         date: date,
         availableSlots: availableSlots,
         usedSlots: usedSlots,
       );
-      if (profileTask != null) {
-        return profileTask;
-      }
     }
 
-    // Tier 3: Fall back to rule-based scheduling
-    return _scheduleWithRules(
-      goal: goal,
-      date: date,
-      availableSlots: availableSlots,
-      usedSlots: usedSlots,
-    );
+    return null;
+  }
+
+  /// Apply ML predictions to boost scores of existing slots
+  Future<List<TimeSlotScore>> _applyMLBoosts(
+    List<TimeSlotScore> scores,
+    Goal goal,
+    DateTime date,
+  ) async {
+    final dayOfWeek = date.weekday - 1;
+    final boostedScores = <TimeSlotScore>[];
+
+    for (final scoreItem in scores) {
+      final prediction = await mlPredictor.predictProductivity(
+        goalId: goal.id,
+        hourOfDay: scoreItem.slot.start.hour,
+        dayOfWeek: dayOfWeek,
+        duration: goal.targetDuration,
+      );
+
+      double newScore = scoreItem.score;
+      final newFactors = Map<String, double>.from(scoreItem.factors);
+
+      if (prediction != null && prediction.confidence >= minMLConfidence) {
+        // Boost score based on ML prediction (up to +0.3)
+        final boost = (prediction.score * 0.3) * prediction.confidence;
+        newScore += boost;
+        newFactors['ml_boost'] = boost;
+      }
+
+      boostedScores.add(
+        TimeSlotScore(
+          slot: scoreItem.slot,
+          score: newScore,
+          factors: newFactors,
+          method: scoreItem.method,
+        ),
+      );
+    }
+
+    return boostedScores;
   }
 
   /// Try to schedule using habit-locked time (for established habits)
@@ -239,142 +337,6 @@ class HybridScheduler {
     return null;
   }
 
-  /// Schedule using profile-based scoring
-  Future<ScheduledTask?> _scheduleWithProfile({
-    required Goal goal,
-    required DateTime date,
-    required List<TimeSlot> availableSlots,
-    required List<TimeSlot> usedSlots,
-  }) async {
-    if (profileBasedScheduler == null) return null;
-
-    final result = await profileBasedScheduler!.findBestSlotForGoal(
-      goal: goal,
-      date: date,
-      availableSlots: availableSlots,
-      usedSlots: usedSlots,
-    );
-
-    if (result == null) return null;
-
-    // Apply habit protection for at-risk streaks
-    final adjustedSlot = await _applyStreakProtection(
-      goal: goal,
-      slot: result.slot,
-      date: date,
-      availableSlots: availableSlots,
-      usedSlots: usedSlots,
-    );
-
-    return _createScheduledTask(
-      goal: goal,
-      date: date,
-      slot: adjustedSlot ?? result.slot,
-      method: 'profile-based',
-      mlConfidence: null,
-    );
-  }
-
-  /// Apply streak protection - prefer times that historically worked
-  Future<TimeSlot?> _applyStreakProtection({
-    required Goal goal,
-    required TimeSlot slot,
-    required DateTime date,
-    required List<TimeSlot> availableSlots,
-    required List<TimeSlot> usedSlots,
-  }) async {
-    if (habitMetricsRepository == null) return null;
-
-    final metrics = await habitMetricsRepository!.getMetricsForGoal(goal.id);
-    if (metrics == null) return null;
-
-    // Only apply protection for significant streaks
-    if (metrics.currentStreak < streakProtectionThreshold) return null;
-
-    // If we have a sticky hour that works, prefer it
-    if (metrics.stickyHour != null) {
-      final freeSlots = ruleBasedScheduler.getFreeSlots(
-        availableSlots,
-        usedSlots,
-      );
-      final stickyHour = metrics.stickyHour!;
-      final requiredMinutes =
-          goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes;
-
-      for (final freeSlot in freeSlots) {
-        // Check if the sticky hour falls within this slot
-        final targetTime = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          stickyHour,
-          0,
-        );
-        final targetEnd = targetTime.add(Duration(minutes: requiredMinutes));
-
-        if (!targetTime.isBefore(freeSlot.start) &&
-            !targetEnd.isAfter(freeSlot.end)) {
-          return TimeSlot(targetTime, freeSlot.end);
-        }
-      }
-    }
-
-    return null;
-  }
-
-  /// Schedule using ML predictions
-  Future<ScheduledTask?> _scheduleWithML({
-    required Goal goal,
-    required DateTime date,
-    required List<TimeSlot> availableSlots,
-    required List<TimeSlot> usedSlots,
-  }) async {
-    final dayOfWeek = date.weekday - 1; // 0=Monday
-    final freeSlots = ruleBasedScheduler.getFreeSlots(
-      availableSlots,
-      usedSlots,
-    );
-
-    // Try to find best slot using ML predictions
-    MLPrediction? bestPrediction;
-    TimeSlot? bestSlot;
-    double bestScore = 0.0;
-
-    for (final slot in freeSlots) {
-      if (slot.canFit(
-        goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes,
-      )) {
-        final prediction = await mlPredictor.predictProductivity(
-          goalId: goal.id,
-          hourOfDay: slot.start.hour,
-          dayOfWeek: dayOfWeek,
-          duration: goal.targetDuration,
-        );
-
-        if (prediction != null &&
-            prediction.confidence >= minMLConfidence &&
-            prediction.score > bestScore) {
-          bestScore = prediction.score;
-          bestPrediction = prediction;
-          bestSlot = slot;
-        }
-      }
-    }
-
-    if (bestSlot == null || bestPrediction == null) {
-      return null;
-    }
-
-    // Create scheduled task with ML metadata
-    return _createScheduledTask(
-      goal: goal,
-      date: date,
-      slot: bestSlot,
-      method: 'ml-based',
-      mlConfidence: bestPrediction.confidence,
-    );
-  }
-
   /// Schedule using rule-based approach
   ScheduledTask? _scheduleWithRules({
     required Goal goal,
@@ -434,7 +396,7 @@ class HybridScheduler {
     final goalsForDate = allGoals.where((goal) {
       // Only schedule active goals
       if (!goal.isActive) return false;
-      
+
       if (goal.frequency.isEmpty) return false;
 
       // Don't schedule goals created after this date
@@ -469,8 +431,23 @@ class HybridScheduler {
     final blockers = await _getBlockersForDate(date);
 
     // Calculate available slots, treating existing tasks as blockers too
-    final availableSlots = await ruleBasedScheduler
-        .calculateAvailableSlotsAsync(date, blockers);
+    // Use dynamic window if available
+    List<TimeSlot> availableSlots;
+    if (dynamicTimeWindowService != null) {
+      final window = await dynamicTimeWindowService!.getTimeWindowForDate(date);
+
+      availableSlots = ruleBasedScheduler.calculateAvailableSlots(
+        date,
+        blockers,
+        startHour: window.wakeHour,
+        endHour: window.sleepHour,
+      );
+    } else {
+      availableSlots = await ruleBasedScheduler.calculateAvailableSlotsAsync(
+        date,
+        blockers,
+      );
+    }
 
     // Convert existing tasks to used slots
     final usedSlots = <TimeSlot>[];
@@ -481,7 +458,7 @@ class HybridScheduler {
     }
 
     // Schedule the goal
-    final task = await _scheduleGoalHybrid(
+    final task = await _scheduleGoalSmart(
       goal: goal,
       date: date,
       availableSlots: availableSlots,
@@ -511,7 +488,10 @@ class HybridScheduler {
 
     // Save to database
     for (final task in tasksToSave) {
-      await scheduledTaskRepository.createScheduledTask(task, allowDuplicates: false);
+      await scheduledTaskRepository.createScheduledTask(
+        task,
+        allowDuplicates: false,
+      );
     }
 
     return [...rescheduledTasks, ...tasksToSave];
@@ -560,7 +540,7 @@ class HybridScheduler {
 
     return {
       ...baseStats,
-      'scheduler_version': 'v2-three-tier',
+      'scheduler_version': 'v2-smart-score-pick',
       'ml_predictor': mlPredictor.predictorName,
       'goals_with_ml_data': goalsWithMLData,
       'ml_coverage_percent': goals.isEmpty

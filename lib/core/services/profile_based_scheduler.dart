@@ -30,29 +30,29 @@ class ProfileBasedScheduler {
     double score = 0.5; // Base score
     final factors = <String, double>{};
 
-    // 1. Chrono-type matching (up to 0.25)
+    // 1. Chrono-type matching (Increased to 0.35 for "Smart Day 1")
     final chronoScore = _calculateChronoScore(
       profile: profile,
       hourOfDay: slot.start.hour,
     );
     factors['chronotype'] = chronoScore;
-    score += chronoScore * 0.25;
+    score += chronoScore * 0.35;
 
-    // 2. Category optimal hours (up to 0.25)
+    // 2. Category optimal hours (0.25)
     final categoryScore = category.getHourScore(slot.start.hour);
     factors['category'] = categoryScore;
     score += categoryScore * 0.25;
 
-    // 3. Work hours avoidance (up to -0.3)
+    // 3. Work hours avoidance (Reduced to 0.2 to allow flexibility)
     final workPenalty = _calculateWorkHoursPenalty(
       profile: profile,
       hourOfDay: slot.start.hour,
       category: category,
     );
     factors['work_penalty'] = workPenalty;
-    score += workPenalty;
+    score += workPenalty; // Note: workPenalty can be negative
 
-    // 4. Active window bonus (up to 0.1)
+    // 4. Active window bonus (0.1)
     final activeBonus = _calculateActiveWindowBonus(
       profile: profile,
       hourOfDay: slot.start.hour,
@@ -60,7 +60,7 @@ class ProfileBasedScheduler {
     factors['active_window'] = activeBonus;
     score += activeBonus;
 
-    // 5. Session length preference alignment (up to 0.1)
+    // 5. Session length preference alignment (0.1)
     final sessionScore = _calculateSessionLengthScore(
       profile: profile,
       goalDuration: goal.targetDuration,
@@ -136,7 +136,7 @@ class ProfileBasedScheduler {
 
     // Other categories - avoid work hours
     if (profile.isDuringWorkHours(hourOfDay)) {
-      return -0.3; // Penalty for personal goals during work hours
+      return -0.2; // Penalty for personal goals during work hours
     }
 
     return 0.0;
@@ -189,6 +189,40 @@ class ProfileBasedScheduler {
     return 0.2;
   }
 
+  /// Score all available slots for a goal
+  Future<List<TimeSlotScore>> scoreAllSlots({
+    required Goal goal,
+    required DateTime date,
+    required List<TimeSlot> availableSlots,
+    required List<TimeSlot> usedSlots,
+    bool squeezeBuffer = false,
+  }) async {
+    final freeSlots = _getFreeSlots(
+      availableSlots,
+      usedSlots,
+      squeezeBuffer: squeezeBuffer,
+    );
+
+    if (freeSlots.isEmpty) return [];
+
+    final scores = <TimeSlotScore>[];
+
+    final requiredDuration = squeezeBuffer
+        ? goal.targetDuration
+        : goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes;
+
+    for (final slot in freeSlots) {
+      if (slot.canFit(requiredDuration)) {
+        final score = await scoreTimeSlot(goal: goal, slot: slot, date: date);
+        scores.add(score);
+      }
+    }
+
+    // Sort by score descending
+    scores.sort((a, b) => b.score.compareTo(a.score));
+    return scores;
+  }
+
   /// Find the best time slot for a goal using profile-based scoring
   Future<TimeSlotScore?> findBestSlotForGoal({
     required Goal goal,
@@ -196,38 +230,27 @@ class ProfileBasedScheduler {
     required List<TimeSlot> availableSlots,
     required List<TimeSlot> usedSlots,
   }) async {
-    final freeSlots = _getFreeSlots(availableSlots, usedSlots);
-    
-    if (freeSlots.isEmpty) return null;
-
-    final scores = <TimeSlotScore>[];
-
-    for (final slot in freeSlots) {
-      if (slot.canFit(goal.targetDuration + RuleBasedScheduler.minTaskGapMinutes)) {
-        final score = await scoreTimeSlot(
-          goal: goal,
-          slot: slot,
-          date: date,
-        );
-        scores.add(score);
-      }
-    }
+    final scores = await scoreAllSlots(
+      goal: goal,
+      date: date,
+      availableSlots: availableSlots,
+      usedSlots: usedSlots,
+    );
 
     if (scores.isEmpty) return null;
-
-    // Return the slot with the highest score
-    scores.sort((a, b) => b.score.compareTo(a.score));
     return scores.first;
   }
 
   /// Get slots that haven't been used yet
   List<TimeSlot> _getFreeSlots(
     List<TimeSlot> availableSlots,
-    List<TimeSlot> usedSlots,
-  ) {
+    List<TimeSlot> usedSlots, {
+    bool squeezeBuffer = false,
+  }) {
     if (usedSlots.isEmpty) return availableSlots;
 
     final freeSlots = <TimeSlot>[];
+    final gapMinutes = squeezeBuffer ? 0 : RuleBasedScheduler.minTaskGapMinutes;
 
     for (final slot in availableSlots) {
       var slotStart = slot.start;
@@ -238,17 +261,13 @@ class ProfileBasedScheduler {
         if (used.start.isBefore(slotEnd) && used.end.isAfter(slotStart)) {
           // If there's usable time before the used slot
           if (slotStart.isBefore(used.start)) {
-            final gapEnd = used.start.subtract(
-              const Duration(minutes: RuleBasedScheduler.minTaskGapMinutes),
-            );
+            final gapEnd = used.start.subtract(Duration(minutes: gapMinutes));
             if (gapEnd.isAfter(slotStart)) {
               freeSlots.add(TimeSlot(slotStart, gapEnd));
             }
           }
           // Move start past the used slot
-          slotStart = used.end.add(
-            const Duration(minutes: RuleBasedScheduler.minTaskGapMinutes),
-          );
+          slotStart = used.end.add(Duration(minutes: gapMinutes));
         }
       }
 

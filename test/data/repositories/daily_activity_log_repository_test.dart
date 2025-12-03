@@ -199,8 +199,9 @@ void main() {
         await repository.saveLog(log);
       }
 
-      final avgWakeHour = await repository.getAverageWeekdayWakeHour();
+      final (avgWakeHour, count) = await repository.getAverageWeekdayWakeHour();
       expect(avgWakeHour, 7);
+      expect(count, 5); // 5 weekdays in 7 days
     });
 
     test('getAverageWeekendWakeHour returns correct average', () async {
@@ -234,8 +235,9 @@ void main() {
         );
       await repository.saveLog(sunday);
 
-      final avgWakeHour = await repository.getAverageWeekendWakeHour();
+      final (avgWakeHour, count) = await repository.getAverageWeekendWakeHour();
       expect(avgWakeHour, 10); // (9+10)/2 rounded
+      expect(count, 2); // 2 weekend days
     });
   });
 }
