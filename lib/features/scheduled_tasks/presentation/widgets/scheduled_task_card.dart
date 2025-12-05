@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/productivity_providers.dart';
 import '../../../../core/services/database_service.dart';
 import '../../../goals/presentation/providers/habit_metrics_provider.dart';
+import '../../../goals/presentation/providers/milestone_provider.dart';
 import '../../../goals/presentation/widgets/streak_badge.dart';
 import '../providers/scheduled_task_providers.dart';
 import '../../../timeline/presentation/providers/timeline_providers.dart';
@@ -113,6 +114,9 @@ class ScheduledTaskCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
+                      
+                      // Milestone display
+                      _buildMilestoneDisplay(ref),
 
                       // Time (start - end)
                       Row(
@@ -189,6 +193,44 @@ class ScheduledTaskCard extends ConsumerWidget {
     );
   }
 
+  Widget _buildMilestoneDisplay(WidgetRef ref) {
+    final milestoneAsync = ref.watch(firstIncompleteMilestoneProvider(task.goalId));
+
+    return milestoneAsync.when(
+      data: (milestone) {
+        if (milestone == null) {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.flag_outlined,
+                size: 12,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  milestone.title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
   Widget _buildStreakBadge(WidgetRef ref) {
     final streakAsync = ref.watch(goalStreakStatusProvider(task.goalId));
 
@@ -217,28 +259,49 @@ class ScheduledTaskCard extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => TaskCompletionModal(
         task: task,
-        onComplete: (actualStartTime, actualDuration, rating, notes) async {
-          // Collect productivity data
-          final collector = ref.read(productivityDataCollectorProvider);
-          await collector.recordTaskCompletion(
-            taskId: task.id,
-            actualStartTime: actualStartTime,
-            actualDurationMinutes: actualDuration,
-            productivityRating: rating,
-            notes: notes,
-          );
+        onComplete: (actualStartTime, actualDuration, rating, notes, milestoneId) async {
+          try {
+            // Collect productivity data
+            final collector = ref.read(productivityDataCollectorProvider);
+            await collector.recordTaskCompletion(
+              taskId: task.id,
+              actualStartTime: actualStartTime,
+              actualDurationMinutes: actualDuration,
+              productivityRating: rating,
+              notes: notes,
+            );
 
-          // Invalidate streak provider for instant UI update
-          ref.invalidate(goalStreakStatusProvider(task.goalId));
-          ref.invalidate(allGoalStreaksProvider);
-          ref.invalidate(goalsAtRiskProvider);
-          
-          // Invalidate timeline to show updated task state
-          ref.invalidate(scheduledTasksForDateProvider(task.scheduledDate));
-          ref.invalidate(unifiedTimelineProvider(task.scheduledDate));
+            // If a milestone was completed, update the task to reference it
+            if (milestoneId != null) {
+              task.milestoneId = milestoneId;
+              task.milestoneCompleted = true;
+              final taskRepo = ref.read(scheduledTaskRepositoryProvider);
+              await taskRepo.updateScheduledTask(task);
+            }
 
-          // Notify parent
-          onCompleted?.call();
+            // Invalidate milestone providers
+            ref.invalidate(milestonesForGoalProvider(task.goalId));
+            ref.invalidate(firstIncompleteMilestoneProvider(task.goalId));
+            
+            // Invalidate streak provider for instant UI update
+            ref.invalidate(goalStreakStatusProvider(task.goalId));
+            ref.invalidate(allGoalStreaksProvider);
+            ref.invalidate(goalsAtRiskProvider);
+            
+            // Invalidate timeline to show updated task state
+            ref.invalidate(scheduledTasksForDateProvider(task.scheduledDate));
+            ref.invalidate(unifiedTimelineProvider(task.scheduledDate));
+
+            // Notify parent
+            onCompleted?.call();
+          } catch (e) {
+            // Log error but don't prevent UI update
+            debugPrint('Error completing task: $e');
+            // Still invalidate providers to refresh UI
+            ref.invalidate(scheduledTasksForDateProvider(task.scheduledDate));
+            ref.invalidate(unifiedTimelineProvider(task.scheduledDate));
+            onCompleted?.call();
+          }
         },
       ),
     );

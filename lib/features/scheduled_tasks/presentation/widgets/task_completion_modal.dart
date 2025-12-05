@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../data/models/scheduled_task.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../goals/presentation/providers/milestone_provider.dart';
 
 /// Modal for recording task completion with productivity feedback
 class TaskCompletionModal extends ConsumerStatefulWidget {
@@ -11,6 +13,7 @@ class TaskCompletionModal extends ConsumerStatefulWidget {
     int actualDurationMinutes,
     double productivityRating,
     String? notes,
+    int? completedMilestoneId,
   )
   onComplete;
 
@@ -30,6 +33,8 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
   late int _actualDurationMinutes;
   double _productivityRating = 3.0;
   final _notesController = TextEditingController();
+  bool _markMilestoneComplete = false;
+  int? _milestoneToComplete;
 
   @override
   void initState() {
@@ -135,6 +140,9 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
             _buildDurationPicker(),
             const SizedBox(height: 24),
 
+            // Milestone completion (if available)
+            _buildMilestoneSection(),
+            
             // Notes (optional)
             const Text(
               'Notes (optional)',
@@ -342,13 +350,152 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
     }
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
+    // If user wants to mark milestone complete, pass the milestone ID
+    int? completedMilestoneId;
+    
+    // If milestone was marked complete, update it first to ensure data consistency
+    if (_markMilestoneComplete && _milestoneToComplete != null) {
+      try {
+        await ref.read(milestoneNotifierProvider.notifier).toggleMilestoneCompletion(
+              _milestoneToComplete!,
+              widget.task.goalId,
+              true,
+            );
+        // Only set the ID if milestone was successfully marked complete
+        completedMilestoneId = _milestoneToComplete;
+      } catch (e) {
+        // Log error but continue with task completion
+        debugPrint('Error marking milestone complete: $e');
+        // Show error to user if context is still available
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to mark milestone as complete: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        // Don't pass milestone ID if it failed to complete
+        completedMilestoneId = null;
+      }
+    }
+    
     widget.onComplete(
       _actualStartTime,
       _actualDurationMinutes,
       _productivityRating,
       _notesController.text.isEmpty ? null : _notesController.text,
+      completedMilestoneId,
     );
-    Navigator.pop(context);
+    
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  Widget _buildMilestoneSection() {
+    final milestoneAsync = ref.watch(firstIncompleteMilestoneProvider(widget.task.goalId));
+
+    return milestoneAsync.when(
+      data: (milestone) {
+        if (milestone == null) {
+          return const SizedBox.shrink();
+        }
+
+        // Capture the milestone ID when available
+        final milestoneId = milestone.id;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Milestone Progress',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: _markMilestoneComplete,
+                      onChanged: (value) {
+                        setState(() {
+                          _markMilestoneComplete = value ?? false;
+                          // Store the milestone ID when user checks the box
+                          _milestoneToComplete = (value ?? false) ? milestoneId : null;
+                        });
+                        if (value == true) {
+                          HapticFeedback.lightImpact();
+                        }
+                      },
+                      activeColor: Color(
+                        int.parse(widget.task.colorHex?.replaceFirst('#', '0xFF') ?? '0xFFC6F432'),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Mark milestone as complete?',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.flag_outlined,
+                              size: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                milestone.title,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
   }
 }
