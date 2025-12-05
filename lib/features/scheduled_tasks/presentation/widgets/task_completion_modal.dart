@@ -356,11 +356,25 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
     
     // If milestone was marked complete, update it first to ensure data consistency
     if (milestoneId != null) {
-      await ref.read(milestoneNotifierProvider.notifier).toggleMilestoneCompletion(
-            milestoneId,
-            widget.task.goalId,
-            true,
+      try {
+        await ref.read(milestoneNotifierProvider.notifier).toggleMilestoneCompletion(
+              milestoneId,
+              widget.task.goalId,
+              true,
+            );
+      } catch (e) {
+        // Log error but continue with task completion
+        debugPrint('Error marking milestone complete: $e');
+        // Show error to user if context is still available
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Task completed but milestone update failed: $e'),
+              backgroundColor: AppColors.error,
+            ),
           );
+        }
+      }
     }
     
     widget.onComplete(
