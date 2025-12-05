@@ -120,9 +120,7 @@ class _ExpandableGoalCardState extends ConsumerState<ExpandableGoalCard> {
               // Milestones section
               milestonesAsync.when(
                 data: (milestones) {
-                  if (milestones.isEmpty && !_isExpanded) {
-                    return const SizedBox.shrink();
-                  }
+                  // Always show the collapsible header, even if there are no milestones and not expanded
                   return _buildMilestonesSection(milestones);
                 },
                 loading: () => const SizedBox.shrink(),
