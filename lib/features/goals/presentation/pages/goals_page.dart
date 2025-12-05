@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:goal_tracker/features/goals/presentation/providers/goal_provider.dart';
 import 'package:goal_tracker/features/goals/presentation/widgets/empty_goals_state.dart';
-import 'package:goal_tracker/features/goals/presentation/widgets/goal_card.dart';
+import 'package:goal_tracker/features/goals/presentation/widgets/expandable_goal_card.dart';
+import 'package:goal_tracker/features/goals/presentation/providers/habit_metrics_provider.dart';
 import 'package:goal_tracker/core/theme/app_colors.dart';
 
 class GoalsPage extends ConsumerWidget {
@@ -91,23 +92,63 @@ class GoalsPage extends ConsumerWidget {
               },
               itemBuilder: (context, index) {
                 final goal = goals[index];
+                final streakAsync = ref.watch(goalStreakStatusProvider(goal.id));
+                
                 return Padding(
                   key: ValueKey(goal.id),
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: GoalCard(
-                    goal: goal,
-                    priorityIndex: index + 1, // 1-based priority display
-                    onTap: () {
-                      context.push('/goals/${goal.id}/edit');
-                    },
-                    onDelete: () {
-                      goalNotifier.deleteGoal(goal.id);
-                    },
-                    dragHandle: ReorderableDragStartListener(
-                      index: index,
-                      child: const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Icon(Icons.drag_handle, color: AppColors.textSecondary),
+                  child: streakAsync.when(
+                    data: (streakStatus) => ExpandableGoalCard(
+                      goal: goal,
+                      priorityIndex: index + 1,
+                      currentStreak: streakStatus.currentStreak,
+                      isStreakAtRisk: streakStatus.isAtRisk,
+                      onTap: () {
+                        context.push('/goals/${goal.id}/edit');
+                      },
+                      onDelete: () {
+                        goalNotifier.deleteGoal(goal.id);
+                      },
+                      dragHandle: ReorderableDragStartListener(
+                        index: index,
+                        child: const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Icon(Icons.drag_handle, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
+                    loading: () => ExpandableGoalCard(
+                      goal: goal,
+                      priorityIndex: index + 1,
+                      onTap: () {
+                        context.push('/goals/${goal.id}/edit');
+                      },
+                      onDelete: () {
+                        goalNotifier.deleteGoal(goal.id);
+                      },
+                      dragHandle: ReorderableDragStartListener(
+                        index: index,
+                        child: const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Icon(Icons.drag_handle, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
+                    error: (_, __) => ExpandableGoalCard(
+                      goal: goal,
+                      priorityIndex: index + 1,
+                      onTap: () {
+                        context.push('/goals/${goal.id}/edit');
+                      },
+                      onDelete: () {
+                        goalNotifier.deleteGoal(goal.id);
+                      },
+                      dragHandle: ReorderableDragStartListener(
+                        index: index,
+                        child: const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Icon(Icons.drag_handle, color: AppColors.textSecondary),
+                        ),
                       ),
                     ),
                   ),
