@@ -350,9 +350,18 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
     }
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     // If user wants to mark milestone complete, pass the milestone ID
     final milestoneId = _markMilestoneComplete ? _milestoneToComplete : null;
+    
+    // If milestone was marked complete, update it first to ensure data consistency
+    if (milestoneId != null) {
+      await ref.read(milestoneNotifierProvider.notifier).toggleMilestoneCompletion(
+            milestoneId,
+            widget.task.goalId,
+            true,
+          );
+    }
     
     widget.onComplete(
       _actualStartTime,
@@ -362,16 +371,9 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
       milestoneId,
     );
     
-    // If milestone was marked complete, update it
-    if (milestoneId != null) {
-      ref.read(milestoneNotifierProvider.notifier).toggleMilestoneCompletion(
-            milestoneId,
-            widget.task.goalId,
-            true,
-          );
+    if (mounted) {
+      Navigator.pop(context);
     }
-    
-    Navigator.pop(context);
   }
 
   Widget _buildMilestoneSection() {

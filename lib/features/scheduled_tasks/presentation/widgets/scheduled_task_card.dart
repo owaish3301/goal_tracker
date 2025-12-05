@@ -260,39 +260,48 @@ class ScheduledTaskCard extends ConsumerWidget {
       builder: (context) => TaskCompletionModal(
         task: task,
         onComplete: (actualStartTime, actualDuration, rating, notes, milestoneId) async {
-          // Collect productivity data
-          final collector = ref.read(productivityDataCollectorProvider);
-          await collector.recordTaskCompletion(
-            taskId: task.id,
-            actualStartTime: actualStartTime,
-            actualDurationMinutes: actualDuration,
-            productivityRating: rating,
-            notes: notes,
-          );
+          try {
+            // Collect productivity data
+            final collector = ref.read(productivityDataCollectorProvider);
+            await collector.recordTaskCompletion(
+              taskId: task.id,
+              actualStartTime: actualStartTime,
+              actualDurationMinutes: actualDuration,
+              productivityRating: rating,
+              notes: notes,
+            );
 
-          // If a milestone was completed, update the task to reference it
-          if (milestoneId != null) {
-            task.milestoneId = milestoneId;
-            task.milestoneCompleted = true;
-            final taskRepo = ref.read(scheduledTaskRepositoryProvider);
-            await taskRepo.updateScheduledTask(task);
+            // If a milestone was completed, update the task to reference it
+            if (milestoneId != null) {
+              task.milestoneId = milestoneId;
+              task.milestoneCompleted = true;
+              final taskRepo = ref.read(scheduledTaskRepositoryProvider);
+              await taskRepo.updateScheduledTask(task);
+            }
+
+            // Invalidate milestone providers
+            ref.invalidate(milestonesForGoalProvider(task.goalId));
+            ref.invalidate(firstIncompleteMilestoneProvider(task.goalId));
+            
+            // Invalidate streak provider for instant UI update
+            ref.invalidate(goalStreakStatusProvider(task.goalId));
+            ref.invalidate(allGoalStreaksProvider);
+            ref.invalidate(goalsAtRiskProvider);
+            
+            // Invalidate timeline to show updated task state
+            ref.invalidate(scheduledTasksForDateProvider(task.scheduledDate));
+            ref.invalidate(unifiedTimelineProvider(task.scheduledDate));
+
+            // Notify parent
+            onCompleted?.call();
+          } catch (e) {
+            // Log error but don't prevent UI update
+            debugPrint('Error completing task: $e');
+            // Still invalidate providers to refresh UI
+            ref.invalidate(scheduledTasksForDateProvider(task.scheduledDate));
+            ref.invalidate(unifiedTimelineProvider(task.scheduledDate));
+            onCompleted?.call();
           }
-
-          // Invalidate milestone providers
-          ref.invalidate(milestonesForGoalProvider(task.goalId));
-          ref.invalidate(firstIncompleteMilestoneProvider(task.goalId));
-          
-          // Invalidate streak provider for instant UI update
-          ref.invalidate(goalStreakStatusProvider(task.goalId));
-          ref.invalidate(allGoalStreaksProvider);
-          ref.invalidate(goalsAtRiskProvider);
-          
-          // Invalidate timeline to show updated task state
-          ref.invalidate(scheduledTasksForDateProvider(task.scheduledDate));
-          ref.invalidate(unifiedTimelineProvider(task.scheduledDate));
-
-          // Notify parent
-          onCompleted?.call();
         },
       ),
     );
