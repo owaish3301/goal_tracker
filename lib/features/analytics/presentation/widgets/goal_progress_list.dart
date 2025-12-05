@@ -90,7 +90,14 @@ class _GoalProgressRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final goalColor = Color(int.parse(goal.colorHex.replaceFirst('#', '0xFF')));
-    final completionPercent = goal.completionRate;
+    // Use milestone progress if there are milestones, otherwise use task completion
+    final hasMillestones = goal.totalMilestones > 0;
+    final progressPercent = hasMillestones
+        ? goal.milestoneProgress
+        : goal.completionRate;
+    final progressLabel = hasMillestones
+        ? '${goal.completedMilestones}/${goal.totalMilestones} milestones'
+        : '${goal.totalCompletions}/${goal.totalScheduled} tasks';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -126,7 +133,7 @@ class _GoalProgressRow extends StatelessWidget {
                 ),
               ),
               Text(
-                '${(completionPercent * 100).toInt()}%',
+                '${(progressPercent * 100).toInt()}%',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -143,7 +150,7 @@ class _GoalProgressRow extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(3),
                   child: LinearProgressIndicator(
-                    value: completionPercent,
+                    value: progressPercent,
                     backgroundColor: AppColors.background,
                     valueColor: AlwaysStoppedAnimation<Color>(goalColor),
                     minHeight: 6,
@@ -152,7 +159,7 @@ class _GoalProgressRow extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                '${goal.totalCompletions}/${goal.totalScheduled}',
+                progressLabel,
                 style: TextStyle(
                   fontSize: 11,
                   color: AppColors.textSecondary.withValues(alpha: 0.7),

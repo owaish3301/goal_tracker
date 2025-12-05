@@ -14,6 +14,8 @@ class GoalAnalytics {
   final int totalScheduled;
   final double consistencyScore;
   final bool isAtRisk;
+  final int completedMilestones;
+  final int totalMilestones;
 
   GoalAnalytics({
     required this.goalId,
@@ -26,10 +28,15 @@ class GoalAnalytics {
     required this.totalScheduled,
     required this.consistencyScore,
     required this.isAtRisk,
+    required this.completedMilestones,
+    required this.totalMilestones,
   });
 
   double get completionRate =>
       totalScheduled > 0 ? totalCompletions / totalScheduled : 0.0;
+
+  double get milestoneProgress =>
+      totalMilestones > 0 ? completedMilestones / totalMilestones : 0.0;
 }
 
 /// Main analytics data aggregation
@@ -89,6 +96,8 @@ final analyticsDataProvider = FutureProvider<AnalyticsData>((ref) async {
   final goalRepo = ref.watch(goalRepositoryProvider);
   final habitMetricsRepo = ref.watch(habitMetricsRepositoryProvider);
   final productivityRepo = ref.watch(productivityDataRepositoryProvider);
+  final milestoneRepo = ref.watch(milestoneRepositoryProvider);
+  final scheduledTaskRepo = ref.watch(scheduledTaskRepositoryProvider);
 
   // Fetch all goals
   final allGoals = await goalRepo.getAllGoals();
@@ -127,6 +136,10 @@ final analyticsDataProvider = FutureProvider<AnalyticsData>((ref) async {
     totalCompletions += metrics?.totalCompletions ?? 0;
     totalScheduled += metrics?.totalScheduled ?? 0;
 
+    // Get milestone counts for this goal
+    final milestones = await milestoneRepo.getMilestonesForGoal(goal.id);
+    final completedMilestones = milestones.where((m) => m.isCompleted).length;
+
     goalAnalyticsList.add(
       GoalAnalytics(
         goalId: goal.id,
@@ -139,6 +152,8 @@ final analyticsDataProvider = FutureProvider<AnalyticsData>((ref) async {
         totalScheduled: metrics?.totalScheduled ?? 0,
         consistencyScore: metrics?.consistencyScore ?? 0.0,
         isAtRisk: isAtRisk,
+        completedMilestones: completedMilestones,
+        totalMilestones: milestones.length,
       ),
     );
   }
@@ -154,13 +169,21 @@ final analyticsDataProvider = FutureProvider<AnalyticsData>((ref) async {
   // Calculate average consistency
   final avgConsistency = await habitMetricsRepo.getAverageConsistency();
 
-  // Get productivity by hour and day
-  final completionStats = await productivityRepo.getCompletionStats();
+  // Calculate average productivity from completed scheduled tasks
   double avgProductivity = 0.0;
-  final totalStat = completionStats['total'];
-  if (totalStat != null && totalStat > 0) {
-    avgProductivity =
-        (completionStats['average_productivity'] as num?)?.toDouble() ?? 0.0;
+  final allCompletedTasks = await scheduledTaskRepo
+      .getAllCompletedScheduledTasks();
+  if (allCompletedTasks.isNotEmpty) {
+    final tasksWithRating = allCompletedTasks
+        .where((t) => t.productivityRating != null)
+        .toList();
+    if (tasksWithRating.isNotEmpty) {
+      final totalRating = tasksWithRating.fold<int>(
+        0,
+        (sum, t) => sum + t.productivityRating!,
+      );
+      avgProductivity = totalRating / tasksWithRating.length;
+    }
   }
 
   // Get productivity patterns
