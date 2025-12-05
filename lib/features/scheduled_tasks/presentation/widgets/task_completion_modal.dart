@@ -399,8 +399,6 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
           return const SizedBox.shrink();
         }
 
-        // No need to store milestone ID in a field; use milestone.id directly when needed
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
