@@ -43,7 +43,9 @@ void main() {
       int actualDurationMinutes,
       double productivityRating,
       String? notes,
-    ) onComplete,
+      int? milestoneId,
+    )
+    onComplete,
   }) {
     return ProviderScope(
       child: MaterialApp(
@@ -56,10 +58,8 @@ void main() {
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (context) => TaskCompletionModal(
-                    task: task,
-                    onComplete: onComplete,
-                  ),
+                  builder: (context) =>
+                      TaskCompletionModal(task: task, onComplete: onComplete),
                 );
               },
               child: const Text('Show Modal'),
@@ -74,10 +74,9 @@ void main() {
     testWidgets('displays task title', (tester) async {
       final task = createTestTask(title: 'My Task Title');
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       // Open modal
       await tester.tap(find.text('Show Modal'));
@@ -89,10 +88,9 @@ void main() {
     testWidgets('displays productivity rating question', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -103,10 +101,9 @@ void main() {
     testWidgets('displays 5 star rating buttons', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -119,10 +116,9 @@ void main() {
     testWidgets('displays start time picker section', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -133,10 +129,9 @@ void main() {
     testWidgets('displays duration picker section', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -147,10 +142,9 @@ void main() {
     testWidgets('displays notes section', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -162,10 +156,9 @@ void main() {
     testWidgets('displays complete button', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -176,10 +169,9 @@ void main() {
     testWidgets('displays close button', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -190,10 +182,9 @@ void main() {
     testWidgets('selecting star updates rating', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -203,7 +194,7 @@ void main() {
 
       // Find star icons (both filled and outline)
       final starFinder = find.byIcon(Icons.star_border);
-      
+
       // Tap on the first star_border (which would be rating 4 or 5)
       if (starFinder.evaluate().isNotEmpty) {
         await tester.tap(starFinder.first);
@@ -214,10 +205,9 @@ void main() {
     testWidgets('duration can be decreased', (tester) async {
       final task = createTestTask(duration: 60);
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -239,10 +229,9 @@ void main() {
     testWidgets('duration can be increased', (tester) async {
       final task = createTestTask(duration: 60);
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -258,8 +247,9 @@ void main() {
       expect(find.text('1h 5m'), findsOneWidget);
     });
 
-    testWidgets('calls onComplete with correct values when submitted',
-        (tester) async {
+    testWidgets('calls onComplete with correct values when submitted', (
+      tester,
+    ) async {
       final task = createTestTask(duration: 30);
 
       DateTime? actualStartTime;
@@ -267,15 +257,17 @@ void main() {
       double? productivityRating;
       String? notes;
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (start, duration, rating, noteText) {
-          actualStartTime = start;
-          actualDuration = duration;
-          productivityRating = rating;
-          notes = noteText;
-        },
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          task: task,
+          onComplete: (start, duration, rating, noteText, milestoneId) {
+            actualStartTime = start;
+            actualDuration = duration;
+            productivityRating = rating;
+            notes = noteText;
+          },
+        ),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -300,10 +292,9 @@ void main() {
     testWidgets('closes modal on close button tap', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -322,10 +313,9 @@ void main() {
     testWidgets('closes modal after submission', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -346,10 +336,9 @@ void main() {
     testWidgets('displays task color indicator', (tester) async {
       final task = createTestTask(colorHex: '#00FF00');
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
@@ -362,10 +351,9 @@ void main() {
     testWidgets('displays rating labels correctly', (tester) async {
       final task = createTestTask();
 
-      await tester.pumpWidget(createTestWidget(
-        task: task,
-        onComplete: (_, __, ___, ____) {},
-      ));
+      await tester.pumpWidget(
+        createTestWidget(task: task, onComplete: (_, __, ___, ____, _____) {}),
+      );
 
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
