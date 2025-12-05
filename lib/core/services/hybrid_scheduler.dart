@@ -12,6 +12,7 @@ import 'rule_based_scheduler.dart';
 import 'ml_predictor.dart';
 import 'profile_based_scheduler.dart';
 import 'dynamic_time_window_service.dart';
+import 'habit_formation_service.dart';
 
 /// Three-tier hybrid scheduler with habit formation overlay
 /// Smart v2: Uses "Score & Pick" architecture
@@ -32,6 +33,7 @@ class HybridScheduler {
   final DynamicTimeWindowService? dynamicTimeWindowService;
   final HabitMetricsRepository? habitMetricsRepository;
   final UserProfileRepository? userProfileRepository;
+  final HabitFormationService? habitFormationService;
 
   // Confidence threshold for using ML predictions
   static const double minMLConfidence = 0.6;
@@ -52,6 +54,7 @@ class HybridScheduler {
     this.dynamicTimeWindowService,
     this.habitMetricsRepository,
     this.userProfileRepository,
+    this.habitFormationService,
   });
 
   /// Check if profile-based scheduling is available
@@ -110,6 +113,10 @@ class HybridScheduler {
 
       if (task != null) {
         scheduledTasks.add(task);
+        // Track that this goal was scheduled for analytics
+        if (habitFormationService != null) {
+          await habitFormationService!.markGoalScheduled(goal.id);
+        }
         // Store EXACT duration in usedSlots (no buffer baked in)
         // This allows the next task to decide whether to squeeze or not
         usedSlots.add(

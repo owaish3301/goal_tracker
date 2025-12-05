@@ -34,8 +34,8 @@ migrate_working_dir/
 /coverage/
 
 # Isar test databases
+*.isar-lck
 test_*.isar
-test_*.isar-lck
 
 # Symbolication related
 app.*.symbols
@@ -47,7 +47,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-
-test_*
-user_profile_test_*

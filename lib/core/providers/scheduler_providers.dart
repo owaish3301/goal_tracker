@@ -5,6 +5,7 @@ import '../services/pattern_based_ml_service.dart';
 import '../services/hybrid_scheduler.dart';
 import '../services/profile_based_scheduler.dart';
 import '../services/dynamic_time_window_service.dart';
+import '../services/habit_formation_service.dart';
 import 'productivity_providers.dart';
 
 /// Provider for the rule-based scheduler
@@ -46,7 +47,9 @@ final profileBasedSchedulerProvider = Provider<ProfileBasedScheduler>((ref) {
 });
 
 /// Provider for the dynamic time window service
-final dynamicTimeWindowServiceProvider = Provider<DynamicTimeWindowService>((ref) {
+final dynamicTimeWindowServiceProvider = Provider<DynamicTimeWindowService>((
+  ref,
+) {
   final activityRepo = ref.watch(dailyActivityLogRepositoryProvider);
   final productivityRepo = ref.watch(productivityDataRepositoryProvider);
   final profileRepo = ref.watch(userProfileRepositoryProvider);
@@ -72,6 +75,7 @@ final hybridSchedulerProvider = Provider<HybridScheduler>((ref) {
   final dynamicTimeWindowService = ref.watch(dynamicTimeWindowServiceProvider);
   final habitMetricsRepo = ref.watch(habitMetricsRepositoryProvider);
   final userProfileRepo = ref.watch(userProfileRepositoryProvider);
+  final habitFormationService = ref.watch(habitFormationServiceProvider);
 
   return HybridScheduler(
     isar: isar,
@@ -84,6 +88,7 @@ final hybridSchedulerProvider = Provider<HybridScheduler>((ref) {
     dynamicTimeWindowService: dynamicTimeWindowService,
     habitMetricsRepository: habitMetricsRepo,
     userProfileRepository: userProfileRepo,
+    habitFormationService: habitFormationService,
   );
 });
 
