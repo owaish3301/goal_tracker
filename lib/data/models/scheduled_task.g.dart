@@ -122,13 +122,18 @@ const ScheduledTaskSchema = CollectionSchema(
       name: r'schedulingMethod',
       type: IsarType.string,
     ),
-    r'title': PropertySchema(
+    r'schedulingReason': PropertySchema(
       id: 21,
+      name: r'schedulingReason',
+      type: IsarType.string,
+    ),
+    r'title': PropertySchema(
+      id: 22,
       name: r'title',
       type: IsarType.string,
     ),
     r'wasRescheduled': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'wasRescheduled',
       type: IsarType.bool,
     )
@@ -199,6 +204,12 @@ int _scheduledTaskEstimateSize(
     }
   }
   bytesCount += 3 + object.schedulingMethod.length * 3;
+  {
+    final value = object.schedulingReason;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.title.length * 3;
   return bytesCount;
 }
@@ -230,8 +241,9 @@ void _scheduledTaskSerialize(
   writer.writeDateTime(offsets[18], object.scheduledDate);
   writer.writeDateTime(offsets[19], object.scheduledStartTime);
   writer.writeString(offsets[20], object.schedulingMethod);
-  writer.writeString(offsets[21], object.title);
-  writer.writeBool(offsets[22], object.wasRescheduled);
+  writer.writeString(offsets[21], object.schedulingReason);
+  writer.writeString(offsets[22], object.title);
+  writer.writeBool(offsets[23], object.wasRescheduled);
 }
 
 ScheduledTask _scheduledTaskDeserialize(
@@ -263,8 +275,9 @@ ScheduledTask _scheduledTaskDeserialize(
   object.scheduledDate = reader.readDateTime(offsets[18]);
   object.scheduledStartTime = reader.readDateTime(offsets[19]);
   object.schedulingMethod = reader.readString(offsets[20]);
-  object.title = reader.readString(offsets[21]);
-  object.wasRescheduled = reader.readBool(offsets[22]);
+  object.schedulingReason = reader.readStringOrNull(offsets[21]);
+  object.title = reader.readString(offsets[22]);
+  object.wasRescheduled = reader.readBool(offsets[23]);
   return object;
 }
 
@@ -318,8 +331,10 @@ P _scheduledTaskDeserializeProp<P>(
     case 20:
       return (reader.readString(offset)) as P;
     case 21:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 22:
+      return (reader.readString(offset)) as P;
+    case 23:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2197,6 +2212,160 @@ extension ScheduledTaskQueryFilter
   }
 
   QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'schedulingReason',
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'schedulingReason',
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'schedulingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'schedulingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'schedulingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'schedulingReason',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'schedulingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'schedulingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'schedulingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'schedulingReason',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'schedulingReason',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
+      schedulingReasonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'schedulingReason',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterFilterCondition>
       titleEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -2636,6 +2805,20 @@ extension ScheduledTaskQuerySortBy
     });
   }
 
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterSortBy>
+      sortBySchedulingReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'schedulingReason', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterSortBy>
+      sortBySchedulingReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'schedulingReason', Sort.desc);
+    });
+  }
+
   QueryBuilder<ScheduledTask, ScheduledTask, QAfterSortBy> sortByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -2962,6 +3145,20 @@ extension ScheduledTaskQuerySortThenBy
     });
   }
 
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterSortBy>
+      thenBySchedulingReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'schedulingReason', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ScheduledTask, ScheduledTask, QAfterSortBy>
+      thenBySchedulingReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'schedulingReason', Sort.desc);
+    });
+  }
+
   QueryBuilder<ScheduledTask, ScheduledTask, QAfterSortBy> thenByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -3137,6 +3334,14 @@ extension ScheduledTaskQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ScheduledTask, ScheduledTask, QDistinct>
+      distinctBySchedulingReason({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'schedulingReason',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ScheduledTask, ScheduledTask, QDistinct> distinctByTitle(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3295,6 +3500,13 @@ extension ScheduledTaskQueryProperty
       schedulingMethodProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'schedulingMethod');
+    });
+  }
+
+  QueryBuilder<ScheduledTask, String?, QQueryOperations>
+      schedulingReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'schedulingReason');
     });
   }
 

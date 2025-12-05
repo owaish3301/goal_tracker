@@ -12,22 +12,29 @@ import '../../../timeline/presentation/providers/timeline_providers.dart';
 import 'task_completion_modal.dart';
 
 /// Card widget for displaying a scheduled task
-class ScheduledTaskCard extends ConsumerWidget {
+class ScheduledTaskCard extends ConsumerStatefulWidget {
   final ScheduledTask task;
   final VoidCallback? onCompleted;
 
   const ScheduledTaskCard({super.key, required this.task, this.onCompleted});
 
+  @override
+  ConsumerState<ScheduledTaskCard> createState() => _ScheduledTaskCardState();
+}
+
+class _ScheduledTaskCardState extends ConsumerState<ScheduledTaskCard> {
+  bool _showReason = false;
+
   /// Check if this task can be completed (only today's tasks)
   bool _canComplete() {
-    if (task.isCompleted) return false;
+    if (widget.task.isCompleted) return false;
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final taskDate = DateTime(
-      task.scheduledDate.year,
-      task.scheduledDate.month,
-      task.scheduledDate.day,
+      widget.task.scheduledDate.year,
+      widget.task.scheduledDate.month,
+      widget.task.scheduledDate.day,
     );
 
     // Only allow completing today's tasks
@@ -36,8 +43,8 @@ class ScheduledTaskCard extends ConsumerWidget {
 
   /// Format time range as "HH:MM AM/PM - HH:MM AM/PM"
   String _formatTimeRange() {
-    final startTime = task.scheduledStartTime;
-    final endTime = startTime.add(Duration(minutes: task.duration));
+    final startTime = widget.task.scheduledStartTime;
+    final endTime = startTime.add(Duration(minutes: widget.task.duration));
 
     String format(DateTime dt) {
       final hour = dt.hour;
@@ -50,138 +57,233 @@ class ScheduledTaskCard extends ConsumerWidget {
     return '${format(startTime)} - ${format(endTime)}';
   }
 
+  /// Check if the reason button should be shown
+  bool get _shouldShowReasonButton {
+    return !widget.task.wasRescheduled &&
+        widget.task.schedulingReason != null &&
+        widget.task.schedulingReason!.isNotEmpty;
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final task = widget.task;
     final taskColor = Color(
       int.parse(task.colorHex?.replaceFirst('#', '0xFF') ?? '0xFFC6F432'),
     );
 
     final canComplete = _canComplete();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: task.isCompleted
-              ? AppColors.textSecondary.withValues(alpha: 0.3)
-              : taskColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: canComplete ? () => _showCompletionModal(context, ref) : null,
-          onLongPress: task.isCompleted
-              ? null
-              : () => _showRescheduleModal(context, ref),
+    return GestureDetector(
+      onTap: () {
+        // Dismiss reason when tapping outside the info button
+        if (_showReason) {
+          setState(() => _showReason = false);
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Color indicator
-                Container(
-                  width: 4,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: taskColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Task info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          border: Border.all(
+            color: task.isCompleted
+                ? AppColors.textSecondary.withValues(alpha: 0.3)
+                : taskColor.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: canComplete ? () => _showCompletionModal(context) : null,
+            onLongPress: task.isCompleted
+                ? null
+                : () => _showRescheduleModal(context),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      // Title
-                      Text(
-                        task.title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: task.isCompleted
-                              ? AppColors.textSecondary
-                              : AppColors.textPrimary,
-                          decoration: task.isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
+                      // Color indicator
+                      Container(
+                        width: 4,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: taskColor,
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(width: 12),
 
-                      // Time (start - end)
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.access_time,
-                            size: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _formatTimeRange(),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
+                      // Task info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title
+                            Text(
+                              task.title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: task.isCompleted
+                                    ? AppColors.textSecondary
+                                    : AppColors.textPrimary,
+                                decoration: task.isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          // ML badge
-                          if (task.schedulingMethod == 'ml-based')
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.accent.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.psychology,
-                                    size: 12,
-                                    color: AppColors.accent,
+                            const SizedBox(height: 4),
+
+                            // Time (start - end) and badges
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.access_time,
+                                  size: 14,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _formatTimeRange(),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textSecondary,
                                   ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'ML',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.accent,
+                                ),
+                                // Reason info button
+                                if (_shouldShowReasonButton) ...[
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(
+                                        () => _showReason = !_showReason,
+                                      );
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: _showReason
+                                            ? AppColors.primary.withValues(
+                                                alpha: 0.2,
+                                              )
+                                            : AppColors.textSecondary
+                                                  .withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Icon(
+                                        _showReason
+                                            ? Icons.lightbulb
+                                            : Icons.lightbulb_outline,
+                                        size: 14,
+                                        color: _showReason
+                                            ? AppColors.primary
+                                            : AppColors.textSecondary,
+                                      ),
                                     ),
                                   ),
                                 ],
-                              ),
+                                const SizedBox(width: 8),
+                                // ML badge
+                                if (task.schedulingMethod == 'ml-based' ||
+                                    task.schedulingMethod == 'smart-v2' &&
+                                        task.mlConfidence != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accent.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.psychology,
+                                          size: 12,
+                                          color: AppColors.accent,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'ML',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.accent,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                // Streak badge
+                                _buildStreakBadge(),
+                              ],
                             ),
-                          // Streak badge
-                          _buildStreakBadge(ref),
-                        ],
+                          ],
+                        ),
+                      ),
+
+                      // Completion checkbox
+                      Checkbox(
+                        value: task.isCompleted,
+                        onChanged: canComplete
+                            ? (_) => _showCompletionModal(context)
+                            : null,
+                        activeColor: taskColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
                     ],
                   ),
-                ),
-
-                // Completion checkbox
-                Checkbox(
-                  value: task.isCompleted,
-                  onChanged: canComplete
-                      ? (_) => _showCompletionModal(context, ref)
-                      : null,
-                  activeColor: taskColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+                  // Animated reason container
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    child: _showReason && task.schedulingReason != null
+                        ? Container(
+                            margin: const EdgeInsets.only(top: 12, left: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.primary.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.lightbulb,
+                                  size: 16,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    task.schedulingReason!,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textPrimary,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -189,8 +291,8 @@ class ScheduledTaskCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildStreakBadge(WidgetRef ref) {
-    final streakAsync = ref.watch(goalStreakStatusProvider(task.goalId));
+  Widget _buildStreakBadge() {
+    final streakAsync = ref.watch(goalStreakStatusProvider(widget.task.goalId));
 
     return streakAsync.when(
       data: (status) {
@@ -210,18 +312,18 @@ class ScheduledTaskCard extends ConsumerWidget {
     );
   }
 
-  void _showCompletionModal(BuildContext context, WidgetRef ref) {
+  void _showCompletionModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => TaskCompletionModal(
-        task: task,
+        task: widget.task,
         onComplete: (actualStartTime, actualDuration, rating, notes) async {
           // Collect productivity data
           final collector = ref.read(productivityDataCollectorProvider);
           await collector.recordTaskCompletion(
-            taskId: task.id,
+            taskId: widget.task.id,
             actualStartTime: actualStartTime,
             actualDurationMinutes: actualDuration,
             productivityRating: rating,
@@ -229,25 +331,27 @@ class ScheduledTaskCard extends ConsumerWidget {
           );
 
           // Invalidate streak provider for instant UI update
-          ref.invalidate(goalStreakStatusProvider(task.goalId));
+          ref.invalidate(goalStreakStatusProvider(widget.task.goalId));
           ref.invalidate(allGoalStreaksProvider);
           ref.invalidate(goalsAtRiskProvider);
-          
+
           // Invalidate timeline to show updated task state
-          ref.invalidate(scheduledTasksForDateProvider(task.scheduledDate));
-          ref.invalidate(unifiedTimelineProvider(task.scheduledDate));
+          ref.invalidate(
+            scheduledTasksForDateProvider(widget.task.scheduledDate),
+          );
+          ref.invalidate(unifiedTimelineProvider(widget.task.scheduledDate));
 
           // Notify parent
-          onCompleted?.call();
+          widget.onCompleted?.call();
         },
       ),
     );
   }
 
-  void _showRescheduleModal(BuildContext context, WidgetRef ref) {
+  void _showRescheduleModal(BuildContext context) {
     TimeOfDay selectedTime = TimeOfDay(
-      hour: task.scheduledStartTime.hour,
-      minute: task.scheduledStartTime.minute,
+      hour: widget.task.scheduledStartTime.hour,
+      minute: widget.task.scheduledStartTime.minute,
     );
 
     showModalBottomSheet(
@@ -294,7 +398,7 @@ class ScheduledTaskCard extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                task.title,
+                widget.task.title,
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
@@ -379,21 +483,24 @@ class ScheduledTaskCard extends ConsumerWidget {
                         // Update the task with new time
                         final repo = ref.read(scheduledTaskRepositoryProvider);
                         final newStartTime = DateTime(
-                          task.scheduledDate.year,
-                          task.scheduledDate.month,
-                          task.scheduledDate.day,
+                          widget.task.scheduledDate.year,
+                          widget.task.scheduledDate.month,
+                          widget.task.scheduledDate.day,
                           selectedTime.hour,
                           selectedTime.minute,
                         );
 
-                        task.scheduledStartTime = newStartTime;
-                        task.wasRescheduled = true;
-                        task.rescheduleCount = (task.rescheduleCount) + 1;
+                        widget.task.scheduledStartTime = newStartTime;
+                        widget.task.wasRescheduled = true;
+                        widget.task.rescheduleCount =
+                            (widget.task.rescheduleCount) + 1;
+                        // Clear the scheduling reason since user manually rescheduled
+                        widget.task.schedulingReason = null;
 
-                        await repo.updateScheduledTask(task);
+                        await repo.updateScheduledTask(widget.task);
 
                         // Notify parent to refresh
-                        onCompleted?.call();
+                        widget.onCompleted?.call();
 
                         if (context.mounted) {
                           Navigator.pop(context);
