@@ -310,11 +310,11 @@ class _ExpandableGoalCardState extends ConsumerState<ExpandableGoalCard> {
     );
   }
 
-  void _addMilestone() {
+  Future<void> _addMilestone() async {
     if (_milestoneController.text.trim().isEmpty) return;
 
-    final milestonesAsync = ref.read(milestonesForGoalProvider(widget.goal.id));
-    final milestoneCount = milestonesAsync.valueOrNull?.length ?? 0;
+    final milestones = await ref.read(milestonesForGoalProvider(widget.goal.id).future);
+    final milestoneCount = milestones.length;
 
     final newMilestone = Milestone()
       ..title = _milestoneController.text.trim()
