@@ -399,10 +399,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
           return const SizedBox.shrink();
         }
 
-        // Store the milestone ID for completion
-        if (_milestoneToComplete == null) {
-          _milestoneToComplete = milestone.id;
-        }
+        // No need to store milestone ID in a field; use milestone.id directly when needed
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
