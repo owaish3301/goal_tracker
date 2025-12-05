@@ -352,16 +352,18 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
 
   Future<void> _handleSubmit() async {
     // If user wants to mark milestone complete, pass the milestone ID
-    final milestoneId = _markMilestoneComplete ? _milestoneToComplete : null;
+    int? completedMilestoneId;
     
     // If milestone was marked complete, update it first to ensure data consistency
-    if (milestoneId != null) {
+    if (_markMilestoneComplete && _milestoneToComplete != null) {
       try {
         await ref.read(milestoneNotifierProvider.notifier).toggleMilestoneCompletion(
-              milestoneId,
+              _milestoneToComplete!,
               widget.task.goalId,
               true,
             );
+        // Only set the ID if milestone was successfully marked complete
+        completedMilestoneId = _milestoneToComplete;
       } catch (e) {
         // Log error but continue with task completion
         debugPrint('Error marking milestone complete: $e');
@@ -374,6 +376,8 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
             ),
           );
         }
+        // Don't pass milestone ID if it failed to complete
+        completedMilestoneId = null;
       }
     }
     
@@ -382,7 +386,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
       _actualDurationMinutes,
       _productivityRating,
       _notesController.text.isEmpty ? null : _notesController.text,
-      milestoneId,
+      completedMilestoneId,
     );
     
     if (mounted) {
@@ -398,6 +402,9 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
         if (milestone == null) {
           return const SizedBox.shrink();
         }
+
+        // Capture the milestone ID when available
+        final milestoneId = milestone.id;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,6 +434,8 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
                       onChanged: (value) {
                         setState(() {
                           _markMilestoneComplete = value ?? false;
+                          // Store the milestone ID when user checks the box
+                          _milestoneToComplete = (value ?? false) ? milestoneId : null;
                         });
                         if (value == true) {
                           HapticFeedback.lightImpact();
