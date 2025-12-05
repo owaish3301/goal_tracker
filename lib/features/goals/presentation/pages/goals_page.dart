@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:goal_tracker/data/models/goal.dart';
 import 'package:goal_tracker/features/goals/presentation/providers/goal_provider.dart';
 import 'package:goal_tracker/features/goals/presentation/widgets/empty_goals_state.dart';
 import 'package:goal_tracker/features/goals/presentation/widgets/expandable_goal_card.dart';
@@ -98,58 +99,25 @@ class GoalsPage extends ConsumerWidget {
                   key: ValueKey(goal.id),
                   padding: const EdgeInsets.only(bottom: 12),
                   child: streakAsync.when(
-                    data: (streakStatus) => ExpandableGoalCard(
+                    data: (streakStatus) => _buildGoalCard(
+                      context,
                       goal: goal,
-                      priorityIndex: index + 1,
+                      index: index,
+                      goalNotifier: goalNotifier,
                       currentStreak: streakStatus.currentStreak,
                       isStreakAtRisk: streakStatus.isAtRisk,
-                      onTap: () {
-                        context.push('/goals/${goal.id}/edit');
-                      },
-                      onDelete: () {
-                        goalNotifier.deleteGoal(goal.id);
-                      },
-                      dragHandle: ReorderableDragStartListener(
-                        index: index,
-                        child: const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Icon(Icons.drag_handle, color: AppColors.textSecondary),
-                        ),
-                      ),
                     ),
-                    loading: () => ExpandableGoalCard(
+                    loading: () => _buildGoalCard(
+                      context,
                       goal: goal,
-                      priorityIndex: index + 1,
-                      onTap: () {
-                        context.push('/goals/${goal.id}/edit');
-                      },
-                      onDelete: () {
-                        goalNotifier.deleteGoal(goal.id);
-                      },
-                      dragHandle: ReorderableDragStartListener(
-                        index: index,
-                        child: const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Icon(Icons.drag_handle, color: AppColors.textSecondary),
-                        ),
-                      ),
+                      index: index,
+                      goalNotifier: goalNotifier,
                     ),
-                    error: (_, __) => ExpandableGoalCard(
+                    error: (_, __) => _buildGoalCard(
+                      context,
                       goal: goal,
-                      priorityIndex: index + 1,
-                      onTap: () {
-                        context.push('/goals/${goal.id}/edit');
-                      },
-                      onDelete: () {
-                        goalNotifier.deleteGoal(goal.id);
-                      },
-                      dragHandle: ReorderableDragStartListener(
-                        index: index,
-                        child: const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Icon(Icons.drag_handle, color: AppColors.textSecondary),
-                        ),
-                      ),
+                      index: index,
+                      goalNotifier: goalNotifier,
                     ),
                   ),
                 );
@@ -195,6 +163,36 @@ class GoalsPage extends ConsumerWidget {
           context.push('/goals/add');
         },
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  /// Helper method to build ExpandableGoalCard with optional streak data
+  Widget _buildGoalCard(
+    BuildContext context, {
+    required Goal goal,
+    required int index,
+    required GoalNotifier goalNotifier,
+    int? currentStreak,
+    bool isStreakAtRisk = false,
+  }) {
+    return ExpandableGoalCard(
+      goal: goal,
+      priorityIndex: index + 1,
+      currentStreak: currentStreak,
+      isStreakAtRisk: isStreakAtRisk,
+      onTap: () {
+        context.push('/goals/${goal.id}/edit');
+      },
+      onDelete: () {
+        goalNotifier.deleteGoal(goal.id);
+      },
+      dragHandle: ReorderableDragStartListener(
+        index: index,
+        child: const Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Icon(Icons.drag_handle, color: AppColors.textSecondary),
+        ),
       ),
     );
   }
