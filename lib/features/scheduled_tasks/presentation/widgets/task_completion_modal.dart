@@ -369,7 +369,7 @@ class _TaskCompletionModalState extends ConsumerState<TaskCompletionModal> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Task completed but milestone update failed: $e'),
+              content: Text('Failed to mark milestone as complete: $e'),
               backgroundColor: AppColors.error,
             ),
           );
