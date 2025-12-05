@@ -4,10 +4,6 @@ import 'package:goal_tracker/data/repositories/milestone_repository.dart';
 import 'package:goal_tracker/core/services/database_service.dart';
 
 // Milestone repository provider
-final milestoneRepositoryProvider = Provider<MilestoneRepository>((ref) {
-  final isar = ref.watch(isarProvider);
-  return MilestoneRepository(isar);
-});
 
 // Get all milestones for a specific goal
 final milestonesForGoalProvider = FutureProvider.family<List<Milestone>, int>((ref, goalId) async {
