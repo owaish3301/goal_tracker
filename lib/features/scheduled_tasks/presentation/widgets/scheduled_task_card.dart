@@ -375,7 +375,19 @@ class _ScheduledTaskCardState extends ConsumerState<ScheduledTaskCard> {
               milestoneId,
             ) async {
               try {
-                // Collect productivity data
+                // If a milestone was completed, update the task to reference it FIRST
+                // (before marking complete, to avoid overwriting completion status)
+                if (milestoneId != null) {
+                  final taskRepo = ref.read(scheduledTaskRepositoryProvider);
+                  final currentTask = await taskRepo.getScheduledTask(task.id);
+                  if (currentTask != null) {
+                    currentTask.milestoneId = milestoneId;
+                    currentTask.milestoneCompleted = true;
+                    await taskRepo.updateScheduledTask(currentTask);
+                  }
+                }
+
+                // Now collect productivity data and mark task as complete
                 final collector = ref.read(productivityDataCollectorProvider);
                 await collector.recordTaskCompletion(
                   taskId: task.id,
@@ -384,14 +396,6 @@ class _ScheduledTaskCardState extends ConsumerState<ScheduledTaskCard> {
                   productivityRating: rating,
                   notes: notes,
                 );
-
-                // If a milestone was completed, update the task to reference it
-                if (milestoneId != null) {
-                  task.milestoneId = milestoneId;
-                  task.milestoneCompleted = true;
-                  final taskRepo = ref.read(scheduledTaskRepositoryProvider);
-                  await taskRepo.updateScheduledTask(task);
-                }
 
                 // Invalidate milestone providers
                 ref.invalidate(milestonesForGoalProvider(task.goalId));
