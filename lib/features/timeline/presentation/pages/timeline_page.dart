@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/scheduler_providers.dart';
+import '../../../../core/providers/midnight_detection_provider.dart';
 import '../../../../core/services/database_service.dart';
 import '../../../../data/models/goal.dart';
 import '../providers/timeline_providers.dart';
@@ -34,15 +35,19 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Re-calculate today in case midnight passed during app startup
       final currentNow = DateTime.now();
-      final currentToday = DateTime(currentNow.year, currentNow.month, currentNow.day);
-      
+      final currentToday = DateTime(
+        currentNow.year,
+        currentNow.month,
+        currentNow.day,
+      );
+
       // If selectedDate is now in the past (midnight crossed), update it
       if (selectedDate.isBefore(currentToday)) {
         setState(() {
           selectedDate = currentToday;
         });
       }
-      
+
       _generateScheduleIfNeeded(selectedDate);
     });
   }
@@ -73,7 +78,10 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         // Save to database, checking for duplicates before each save
         // This handles race conditions where multiple callers try to generate simultaneously
         for (final task in newTasks) {
-          final existingForGoal = await repo.getTaskForGoalOnDate(task.goalId, normalized);
+          final existingForGoal = await repo.getTaskForGoalOnDate(
+            task.goalId,
+            normalized,
+          );
           if (existingForGoal == null) {
             await repo.createScheduledTask(task, allowDuplicates: false);
           }
@@ -189,6 +197,28 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   @override
   Widget build(BuildContext context) {
     final sevenDays = _getSevenDays();
+
+    // Listen for midnight crossing (when app is in foreground at midnight)
+    // This triggers schedule generation for the new day
+    ref.listen<DateTime>(midnightDetectionProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        debugPrint(
+          'TimelinePage: Midnight detected! Updating to new date: $next',
+        );
+
+        // Update selected date to the new day
+        setState(() {
+          selectedDate = next;
+        });
+
+        // Generate schedule for the new day
+        _generateScheduleIfNeeded(next);
+
+        // Refresh all timeline data
+        ref.invalidate(scheduledTasksForDateProvider(next));
+        ref.invalidate(unifiedTimelineProvider(next));
+      }
+    });
 
     // Listen for goal changes and do incremental updates (not full regeneration)
     ref.listen<AsyncValue<List<Goal>>>(goalsProvider, (previous, next) async {
