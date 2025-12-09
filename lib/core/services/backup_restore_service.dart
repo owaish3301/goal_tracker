@@ -79,10 +79,24 @@ class BackupRestoreService {
 
   static const String backupVersion = '1.0.0';
 
-  /// Get the backup directory
+  /// Get the backup directory (Downloads folder for persistence)
   Future<Directory> _getBackupDirectory() async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final backupDir = Directory('${appDir.path}/backups');
+    // Try to get Downloads directory first (persists after app uninstall)
+    Directory? downloadsDir = await getDownloadsDirectory();
+
+    // Fallback to external storage if Downloads is not available
+    if (downloadsDir == null) {
+      downloadsDir = await getExternalStorageDirectory();
+    }
+
+    // Final fallback to app documents (won't persist after uninstall)
+    if (downloadsDir == null) {
+      final appDir = await getApplicationDocumentsDirectory();
+      downloadsDir = appDir;
+    }
+
+    // Create a dedicated folder for goal tracker backups
+    final backupDir = Directory('${downloadsDir.path}/GoalTrackerBackups');
     if (!await backupDir.exists()) {
       await backupDir.create(recursive: true);
     }
