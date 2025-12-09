@@ -10,6 +10,7 @@ import '../../features/onboarding/presentation/providers/onboarding_provider.dar
 import '../../features/shell/presentation/pages/main_shell.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
 import '../../features/analytics/presentation/pages/analytics_page.dart';
+import '../../features/settings/presentation/pages/settings_page.dart';
 
 // Navigation keys for each branch
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -21,20 +22,20 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) async {
       // Check if going to onboarding
       final isOnboarding = state.matchedLocation == '/onboarding';
-      
+
       // Check onboarding completion status
       final isCompleted = await ref.read(isOnboardingCompletedProvider.future);
-      
+
       // If onboarding is not completed and not on onboarding page, redirect to onboarding
       if (!isCompleted && !isOnboarding) {
         return '/onboarding';
       }
-      
+
       // If onboarding is completed and on onboarding page, redirect to home
       if (isCompleted && isOnboarding) {
         return '/';
       }
-      
+
       return null; // No redirect needed
     },
     routes: [
@@ -43,7 +44,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/onboarding',
         builder: (context, state) => const OnboardingPage(),
       ),
-      
+
       // Main app with bottom navigation
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -59,7 +60,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          
+
           // Branch 1: Calendar
           StatefulShellBranch(
             routes: [
@@ -69,7 +70,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          
+
           // Branch 2: Analytics
           StatefulShellBranch(
             routes: [
@@ -79,7 +80,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          
+
           // Branch 3: Goals
           StatefulShellBranch(
             routes: [
@@ -91,7 +92,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      
+
       // Routes outside the shell (full screen)
       GoRoute(
         path: '/goals/add',
@@ -122,6 +123,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final id = int.parse(state.pathParameters['id']!);
           return AddEditOneTimeTaskPage(taskId: id);
         },
+      ),
+
+      // Settings
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsPage(),
       ),
     ],
   );

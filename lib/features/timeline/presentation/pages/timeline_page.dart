@@ -254,12 +254,13 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Today'),
-        actions: const [
-          CircleAvatar(
-            backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=32'),
-            radius: 16,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              context.push('/settings');
+            },
           ),
-          SizedBox(width: 16),
         ],
       ),
       body: Column(
