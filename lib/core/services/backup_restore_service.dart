@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../data/models/backup_models.dart';
 import '../../data/models/goal.dart';
 import '../../data/models/milestone.dart';
@@ -85,9 +87,7 @@ class BackupRestoreService {
     Directory? downloadsDir = await getDownloadsDirectory();
 
     // Fallback to external storage if Downloads is not available
-    if (downloadsDir == null) {
-      downloadsDir = await getExternalStorageDirectory();
-    }
+    downloadsDir ??= await getExternalStorageDirectory();
 
     // Final fallback to app documents (won't persist after uninstall)
     if (downloadsDir == null) {
@@ -226,6 +226,99 @@ class BackupRestoreService {
       return BackupResult(
         success: false,
         message: 'Backup failed: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Export all data and share the backup file
+  /// This allows users to save the backup to a location of their choice
+  /// (public Downloads folder, Google Drive, etc.) that persists after app uninstall
+  Future<BackupResult> exportAndShareBackup() async {
+    try {
+      debugPrint('BackupRestoreService: Starting backup export and share...');
+
+      // First create the backup
+      final exportResult = await exportBackup();
+      if (!exportResult.success || exportResult.filePath == null) {
+        return exportResult;
+      }
+
+      // Share the backup file
+      final file = XFile(exportResult.filePath!);
+      final result = await Share.shareXFiles(
+        [file],
+        subject: 'Goal Tracker Backup',
+        text:
+            'Goal Tracker backup file - ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
+      );
+
+      if (result.status == ShareResultStatus.success) {
+        debugPrint('BackupRestoreService: Backup shared successfully');
+        return BackupResult(
+          success: true,
+          message:
+              'Backup shared successfully! Save it to your Downloads folder or cloud storage to keep it after app uninstall.',
+          filePath: exportResult.filePath,
+          metadata: exportResult.metadata,
+        );
+      } else if (result.status == ShareResultStatus.dismissed) {
+        debugPrint('BackupRestoreService: Share dismissed by user');
+        return BackupResult(
+          success: true,
+          message:
+              'Backup created. Share dialog was dismissed. Backup is saved locally but may not persist after app uninstall.',
+          filePath: exportResult.filePath,
+          metadata: exportResult.metadata,
+        );
+      } else {
+        return BackupResult(
+          success: true,
+          message:
+              'Backup created but sharing was unavailable. File saved locally.',
+          filePath: exportResult.filePath,
+          metadata: exportResult.metadata,
+        );
+      }
+    } catch (e, stack) {
+      debugPrint('BackupRestoreService: Export and share failed: $e\n$stack');
+      return BackupResult(
+        success: false,
+        message: 'Backup failed: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Pick a backup file from the device using file picker
+  /// This allows restoring from external locations (public Downloads, cloud, etc.)
+  Future<BackupResult> pickAndRestoreBackup() async {
+    try {
+      debugPrint('BackupRestoreService: Opening file picker for backup...');
+
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        dialogTitle: 'Select Goal Tracker Backup',
+      );
+
+      if (result == null || result.files.isEmpty) {
+        return BackupResult(success: false, message: 'No file selected');
+      }
+
+      final filePath = result.files.single.path;
+      if (filePath == null) {
+        return BackupResult(
+          success: false,
+          message: 'Could not access the selected file',
+        );
+      }
+
+      debugPrint('BackupRestoreService: File picked: $filePath');
+      return await importBackup(filePath);
+    } catch (e, stack) {
+      debugPrint('BackupRestoreService: Pick and restore failed: $e\n$stack');
+      return BackupResult(
+        success: false,
+        message: 'Failed to restore backup: ${e.toString()}',
       );
     }
   }

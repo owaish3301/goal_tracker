@@ -238,27 +238,44 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget _buildBackupActions(BackupState backupState) {
     final isLoading = backupState.status == BackupOperationStatus.inProgress;
 
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildActionButton(
-            icon: Icons.backup,
-            label: 'Create Backup',
-            onPressed: isLoading ? null : _createBackup,
-            isLoading:
-                isLoading && backupState.message?.contains('Creating') == true,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionButton(
+                icon: Icons.backup,
+                label: 'Create Backup',
+                onPressed: isLoading ? null : _createBackup,
+                isLoading:
+                    isLoading &&
+                    backupState.message?.contains('Creating') == true,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildActionButton(
+                icon: Icons.folder_open,
+                label: 'Restore From File',
+                onPressed: isLoading ? null : _restoreFromExternalFile,
+                isOutlined: true,
+                isLoading:
+                    isLoading &&
+                    backupState.message?.contains('Selecting') == true,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionButton(
-            icon: Icons.restore,
-            label: 'Restore',
-            onPressed: isLoading || backupState.availableBackups.isEmpty
-                ? null
-                : () => _showRestoreDialog(backupState.availableBackups),
-            isOutlined: true,
+        const SizedBox(height: 8),
+        // Hint text explaining where backups are saved
+        const Text(
+          'Tip: Use "Create Backup" to save to Downloads/Cloud for persistence after uninstall',
+          style: TextStyle(
+            fontSize: 11,
+            color: AppColors.textSecondary,
+            fontStyle: FontStyle.italic,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -504,7 +521,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _createBackup() async {
     HapticFeedback.mediumImpact();
 
-    final result = await ref.read(backupStateProvider.notifier).createBackup();
+    final result = await ref
+        .read(backupStateProvider.notifier)
+        .createAndShareBackup();
 
     if (!mounted) return;
 
@@ -527,60 +546,59 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  void _showRestoreDialog(List<FileSystemEntity> backups) {
-    showModalBottomSheet(
+  Future<void> _restoreFromExternalFile() async {
+    HapticFeedback.mediumImpact();
+
+    // Show confirmation dialog first
+    final confirmed = await showDialog<bool>(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Restore from File',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: const Text(
+          'Select a backup file from your Downloads folder or cloud storage.\n\nWarning: This will replace ALL your current data with the backup. This action cannot be undone.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Select File'),
+          ),
+        ],
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final result = await ref
+        .read(backupStateProvider.notifier)
+        .restoreFromExternalFile();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
           children: [
-            const Text(
-              'Select Backup to Restore',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            Icon(
+              result.success ? Icons.check_circle : Icons.error,
+              color: Colors.white,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Warning: This will replace all existing data',
-              style: TextStyle(fontSize: 13, color: AppColors.error),
-            ),
-            const SizedBox(height: 16),
-            ...backups.take(5).map((file) {
-              final fileName = file.path.split(Platform.pathSeparator).last;
-              final stats = File(file.path).statSync();
-              return ListTile(
-                leading: const Icon(
-                  Icons.description,
-                  color: AppColors.primary,
-                ),
-                title: Text(
-                  fileName
-                      .replaceAll('.json', '')
-                      .replaceAll('goal_tracker_backup_', ''),
-                  style: const TextStyle(color: AppColors.textPrimary),
-                ),
-                subtitle: Text(
-                  DateFormat('MMM d, yyyy h:mm a').format(stats.modified),
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _confirmRestore(file.path);
-                },
-              );
-            }),
-            const SizedBox(height: 16),
+            const SizedBox(width: 12),
+            Expanded(child: Text(result.message)),
           ],
         ),
+        backgroundColor: result.success ? Colors.green : AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
