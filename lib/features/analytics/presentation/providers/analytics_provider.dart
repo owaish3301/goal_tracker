@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/database_service.dart';
+import '../../../../core/providers/scheduler_providers.dart';
+import '../../../../core/services/dynamic_time_window_service.dart';
 import '../../../../data/models/habit_metrics.dart';
 
 /// Analytics data model for a single goal
@@ -239,4 +241,11 @@ final analyticsDataProvider = FutureProvider<AnalyticsData>((ref) async {
 /// Provider for refreshing analytics data
 final analyticsRefreshProvider = Provider<void Function()>((ref) {
   return () => ref.invalidate(analyticsDataProvider);
+});
+
+/// Provider for current time window (sleep schedule)
+final timeWindowProvider = FutureProvider<DynamicTimeWindow>((ref) async {
+  final service = ref.watch(dynamicTimeWindowServiceProvider);
+  final today = DateTime.now();
+  return await service.getTimeWindowForDate(today);
 });

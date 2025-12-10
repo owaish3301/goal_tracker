@@ -48,20 +48,22 @@ class GoalNotifier extends StateNotifier<GoalState> {
     _ref.invalidate(activeGoalsProvider);
   }
 
-  Future<void> createGoal(Goal goal) async {
+  Future<int?> createGoal(Goal goal) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await _repository.createGoal(goal);
+      final goalId = await _repository.createGoal(goal);
       _invalidateGoalProviders();
       state = state.copyWith(
         isLoading: false,
         successMessage: 'Goal created successfully',
       );
+      return goalId;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to create goal: $e',
       );
+      return null;
     }
   }
 
@@ -88,14 +90,14 @@ class GoalNotifier extends StateNotifier<GoalState> {
       // First delete all scheduled tasks for this goal
       final scheduledTaskRepo = _ref.read(scheduledTaskRepositoryProvider);
       await scheduledTaskRepo.deleteScheduledTasksByGoal(id);
-      
+
       // Then delete the goal itself
       await _repository.deleteGoal(id);
-      
+
       // Invalidate all related providers
       _invalidateGoalProviders();
       _invalidateTimelineProviders();
-      
+
       state = state.copyWith(
         isLoading: false,
         successMessage: 'Goal deleted successfully',
@@ -107,7 +109,7 @@ class GoalNotifier extends StateNotifier<GoalState> {
       );
     }
   }
-  
+
   /// Invalidate timeline providers to refresh UI after goal changes
   void _invalidateTimelineProviders() {
     // Invalidate the last 7 days and next 7 days of timeline data

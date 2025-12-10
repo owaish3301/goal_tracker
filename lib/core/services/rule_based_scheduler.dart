@@ -107,7 +107,7 @@ class RuleBasedScheduler {
     final goalsForDate = allGoals.where((goal) {
       // Only schedule active goals
       if (!goal.isActive) return false;
-      
+
       // Don't schedule goals created after this date
       final goalCreatedDate = DateTime(
         goal.createdAt.year,
@@ -171,14 +171,17 @@ class RuleBasedScheduler {
 
     // Handle sleep times after midnight (e.g., 1 AM = next day)
     // If end hour is less than start hour, it means sleep is after midnight
-    // In this case, use 23:59 as the end time for scheduling purposes
+    // In this case, use 23:59 as the end time (schedule until just before midnight)
+    DateTime dayEnd;
     if (dayEndHour <= dayStartHour) {
-      dayEndHour = 23; // Schedule up to 11 PM when sleep is after midnight
+      // Past-midnight sleep: schedule until 11:59 PM
+      dayEnd = DateTime(date.year, date.month, date.day, 23, 59);
+    } else {
+      dayEnd = DateTime(date.year, date.month, date.day, dayEndHour, 0);
     }
 
     // Start with full day
     final dayStart = DateTime(date.year, date.month, date.day, dayStartHour, 0);
-    final dayEnd = DateTime(date.year, date.month, date.day, dayEndHour, 0);
 
     // If no blockers, return full day as one slot
     if (blockers.isEmpty) {
@@ -245,21 +248,24 @@ class RuleBasedScheduler {
     TimeSlot? result;
     if (goal.priorityIndex < 3) {
       // High priority → Morning (6 AM - 12 PM)
-      result = _findSlotInTimeRange(freeSlots, 6, 12, requiredWithGap) ??
+      result =
+          _findSlotInTimeRange(freeSlots, 6, 12, requiredWithGap) ??
           _findFirstFittingSlot(freeSlots, requiredWithGap);
     } else if (goal.priorityIndex < 6) {
       // Medium priority → Afternoon (12 PM - 6 PM)
-      result = _findSlotInTimeRange(freeSlots, 12, 18, requiredWithGap) ??
+      result =
+          _findSlotInTimeRange(freeSlots, 12, 18, requiredWithGap) ??
           _findFirstFittingSlot(freeSlots, requiredWithGap);
     } else {
       // Low priority → Evening (6 PM - 11 PM)
-      result = _findSlotInTimeRange(freeSlots, 18, 23, requiredWithGap) ??
+      result =
+          _findSlotInTimeRange(freeSlots, 18, 23, requiredWithGap) ??
           _findFirstFittingSlot(freeSlots, requiredWithGap);
     }
-    
+
     // If no slot found with gap, try without gap (for tight schedules / end of day)
     result ??= _findFirstFittingSlot(freeSlots, requiredWithoutGap);
-    
+
     return result;
   }
 
@@ -349,7 +355,10 @@ class RuleBasedScheduler {
 
     // Save to database
     for (final task in newTasks) {
-      await scheduledTaskRepository.createScheduledTask(task, allowDuplicates: false);
+      await scheduledTaskRepository.createScheduledTask(
+        task,
+        allowDuplicates: false,
+      );
     }
 
     return newTasks;

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import '../../data/models/goal.dart';
 import '../../data/models/goal_category.dart';
@@ -68,20 +69,29 @@ class HybridScheduler {
 
   /// Main scheduling method - intelligently uses ML or rules
   Future<List<ScheduledTask>> scheduleForDate(DateTime date) async {
+    debugPrint('scheduleForDate: Starting for date: $date');
+
     // Get goals for this date
     final goals = await _getActiveGoalsForDate(date);
+    debugPrint('scheduleForDate: Got ${goals.length} goals');
 
     if (goals.isEmpty) {
+      debugPrint('scheduleForDate: No goals, returning empty list');
       return [];
     }
 
     // Get blockers
     final blockers = await _getBlockersForDate(date);
+    debugPrint('scheduleForDate: Got ${blockers.length} blockers');
 
     // Calculate available slots using dynamic wake/sleep times
     List<TimeSlot> availableSlots;
     if (dynamicTimeWindowService != null) {
+      debugPrint('scheduleForDate: Using dynamicTimeWindowService');
       final window = await dynamicTimeWindowService!.getTimeWindowForDate(date);
+      debugPrint(
+        'scheduleForDate: Window: wake=${window.wakeHour}, sleep=${window.sleepHour}',
+      );
 
       // Subtract blockers from this window using RuleBasedScheduler
       availableSlots = ruleBasedScheduler.calculateAvailableSlots(
@@ -91,10 +101,18 @@ class HybridScheduler {
         endHour: window.sleepHour,
       );
     } else {
+      debugPrint('scheduleForDate: Using ruleBasedScheduler fallback');
       // Fallback to rule-based default
       availableSlots = await ruleBasedScheduler.calculateAvailableSlotsAsync(
         date,
         blockers,
+      );
+    }
+
+    debugPrint('scheduleForDate: ${availableSlots.length} available slots');
+    for (int i = 0; i < availableSlots.length; i++) {
+      debugPrint(
+        '  Slot $i: ${availableSlots[i].start} - ${availableSlots[i].end}',
       );
     }
 
@@ -103,6 +121,9 @@ class HybridScheduler {
     final usedSlots = <TimeSlot>[];
 
     for (final goal in goals) {
+      debugPrint(
+        'scheduleForDate: Scheduling goal "${goal.title}" (duration=${goal.targetDuration}min)',
+      );
       // Use Smart Scheduling (Score & Pick)
       final task = await _scheduleGoalSmart(
         goal: goal,
@@ -112,6 +133,9 @@ class HybridScheduler {
       );
 
       if (task != null) {
+        debugPrint(
+          'scheduleForDate: Task created at ${task.scheduledStartTime}',
+        );
         scheduledTasks.add(task);
         // Track that this goal was scheduled for analytics
         if (habitFormationService != null) {
@@ -125,9 +149,14 @@ class HybridScheduler {
             task.scheduledStartTime.add(Duration(minutes: task.duration)),
           ),
         );
+      } else {
+        debugPrint('scheduleForDate: FAILED to schedule goal "${goal.title}"');
       }
     }
 
+    debugPrint(
+      'scheduleForDate: Complete! ${scheduledTasks.length} tasks scheduled',
+    );
     return scheduledTasks;
   }
 
@@ -451,12 +480,29 @@ class HybridScheduler {
   Future<List<Goal>> _getActiveGoalsForDate(DateTime date) async {
     final allGoals = await goalRepository.getAllGoals();
     final dateOnly = DateTime(date.year, date.month, date.day);
+    final dayOfWeek = date.weekday - 1; // 0=Monday, 6=Sunday
+
+    debugPrint('_getActiveGoalsForDate: date=$date, dayOfWeek=$dayOfWeek');
+    debugPrint('_getActiveGoalsForDate: Found ${allGoals.length} total goals');
 
     final goalsForDate = allGoals.where((goal) {
-      // Only schedule active goals
-      if (!goal.isActive) return false;
+      debugPrint(
+        '_getActiveGoalsForDate: Checking goal "${goal.title}" (id=${goal.id})',
+      );
+      debugPrint('  - isActive: ${goal.isActive}');
+      debugPrint('  - frequency: ${goal.frequency}');
+      debugPrint('  - createdAt: ${goal.createdAt}');
 
-      if (goal.frequency.isEmpty) return false;
+      // Only schedule active goals
+      if (!goal.isActive) {
+        debugPrint('  - EXCLUDED: not active');
+        return false;
+      }
+
+      if (goal.frequency.isEmpty) {
+        debugPrint('  - EXCLUDED: frequency is empty');
+        return false;
+      }
 
       // Don't schedule goals created after this date
       final goalCreatedDate = DateTime(
@@ -464,12 +510,26 @@ class HybridScheduler {
         goal.createdAt.month,
         goal.createdAt.day,
       );
-      if (goalCreatedDate.isAfter(dateOnly)) return false;
+      if (goalCreatedDate.isAfter(dateOnly)) {
+        debugPrint(
+          '  - EXCLUDED: created after this date (created: $goalCreatedDate, scheduling for: $dateOnly)',
+        );
+        return false;
+      }
 
-      final dayOfWeek = date.weekday - 1;
-      return goal.frequency.contains(dayOfWeek);
+      final containsDay = goal.frequency.contains(dayOfWeek);
+      debugPrint('  - frequency.contains($dayOfWeek): $containsDay');
+      if (!containsDay) {
+        debugPrint('  - EXCLUDED: day $dayOfWeek not in frequency');
+      } else {
+        debugPrint('  - INCLUDED: goal will be scheduled');
+      }
+      return containsDay;
     }).toList();
 
+    debugPrint(
+      '_getActiveGoalsForDate: ${goalsForDate.length} goals passed filter',
+    );
     goalsForDate.sort((a, b) => a.priorityIndex.compareTo(b.priorityIndex));
     return goalsForDate;
   }

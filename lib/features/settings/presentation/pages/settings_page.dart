@@ -84,7 +84,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 icon: Icons.restart_alt,
                 title: 'Redo Onboarding',
                 subtitle: 'Reset your profile preferences',
-                onTap: () => _showComingSoonSnackbar('Redo Onboarding'),
+                onTap: _showRedoOnboardingConfirmation,
               ),
               _buildSettingsTile(
                 icon: Icons.delete_forever,
@@ -810,6 +810,64 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ],
       ),
     );
+  }
+
+  void _showRedoOnboardingConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Redo Onboarding?',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: const Text(
+          'This will reset your profile settings (wake/sleep times, chronotype, etc.) and take you through the onboarding again.\n\nYour goals and tasks will NOT be deleted.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _performRedoOnboarding();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Redo Onboarding'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performRedoOnboarding() async {
+    HapticFeedback.mediumImpact();
+
+    try {
+      // Reset the user profile
+      final profileRepo = ref.read(backupStateProvider.notifier);
+      await profileRepo.resetUserProfile();
+
+      if (!mounted) return;
+
+      // Navigate to onboarding
+      context.go('/onboarding');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile reset. Please complete onboarding again.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+      );
+    }
   }
 
   void _showComingSoonSnackbar(String feature) {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../data/repositories/daily_activity_log_repository.dart';
 import '../../data/repositories/productivity_data_repository.dart';
 import '../../data/repositories/user_profile_repository.dart';
@@ -38,8 +39,20 @@ class DynamicTimeWindowService {
 
     // Get profile defaults (The "Day 1" Baseline)
     final profile = await _profileRepo.getProfile();
-    final defaultWake = profile?.wakeUpHour ?? (isWeekend ? 8 : 7);
-    final defaultSleep = profile?.sleepHour ?? 23;
+    var defaultWake = profile?.wakeUpHour ?? (isWeekend ? 8 : 7);
+    var defaultSleep = profile?.sleepHour ?? 23;
+
+    // SAFETY CHECK: Ensure minimum window of 4 hours
+    // Handle both normal (wake < sleep) and past-midnight (wake > sleep) scenarios
+    const minWindowHours = 4;
+    final activeHours = _calculateActiveHours(defaultWake, defaultSleep);
+    if (activeHours < minWindowHours || activeHours > 20) {
+      debugPrint(
+        'WARNING: User profile has invalid time window (wake=$defaultWake, sleep=$defaultSleep, hours=$activeHours). Using defaults.',
+      );
+      defaultWake = isWeekend ? 8 : 7;
+      defaultSleep = 23;
+    }
 
     // Get learned patterns from activity
     final patterns = await _activityRepo.getActivityPatterns();
@@ -79,10 +92,23 @@ class DynamicTimeWindowService {
         effectiveSleep = _calculateWeightedHour(
           defaultSleep,
           patterns.weekdaySleepHour!.toDouble(),
-          patterns.weekdayDataPoints,
+          patterns.weekdaySleepHour!,
         );
         isLearned = true;
       }
+    }
+
+    // FINAL SAFETY CHECK: Ensure effective window is valid after learning adjustments
+    final effectiveActiveHours = _calculateActiveHours(
+      effectiveWake,
+      effectiveSleep,
+    );
+    if (effectiveActiveHours < minWindowHours || effectiveActiveHours > 20) {
+      debugPrint(
+        'WARNING: Effective window invalid after learning (wake=$effectiveWake, sleep=$effectiveSleep, hours=$effectiveActiveHours). Using profile defaults.',
+      );
+      effectiveWake = defaultWake;
+      effectiveSleep = defaultSleep;
     }
 
     // Get successful hours from productivity data for optimization
@@ -120,6 +146,19 @@ class DynamicTimeWindowService {
     final weighted =
         (profileHour * (1 - confidence)) + (learnedHour * confidence);
     return weighted.round();
+  }
+
+  /// Calculate active hours handling both normal and past-midnight scenarios
+  /// Normal: wake=7, sleep=23 -> 16 hours
+  /// Past-midnight: wake=7, sleep=1 -> 18 hours (7->midnight + midnight->1)
+  int _calculateActiveHours(int wakeHour, int sleepHour) {
+    if (sleepHour > wakeHour) {
+      // Normal case: e.g., wake 7, sleep 23 = 16 hours
+      return sleepHour - wakeHour;
+    } else {
+      // Past-midnight case: e.g., wake 7, sleep 1 = (24-7) + 1 = 18 hours
+      return (24 - wakeHour) + sleepHour;
+    }
   }
 
   /// Get hours where tasks were completed successfully

@@ -61,7 +61,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       final today = DateTime(now.year, now.month, now.day);
 
       // Only generate schedules for today or past dates, NOT future dates
-      // Future dates will show goal previews instead
       if (normalized.isAfter(today)) {
         return;
       }
@@ -76,7 +75,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         final newTasks = await hybridScheduler.scheduleForDate(normalized);
 
         // Save to database, checking for duplicates before each save
-        // This handles race conditions where multiple callers try to generate simultaneously
         for (final task in newTasks) {
           final existingForGoal = await repo.getTaskForGoalOnDate(
             task.goalId,

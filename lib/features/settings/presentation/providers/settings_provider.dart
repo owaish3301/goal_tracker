@@ -186,6 +186,12 @@ class BackupStateNotifier extends StateNotifier<BackupState> {
   void resetStatus() {
     state = state.copyWith(status: BackupOperationStatus.idle, message: null);
   }
+
+  /// Reset user profile to force re-onboarding
+  Future<void> resetUserProfile() async {
+    await _service.resetUserProfile();
+    await _loadInitialData();
+  }
 }
 
 /// Provider for backup state

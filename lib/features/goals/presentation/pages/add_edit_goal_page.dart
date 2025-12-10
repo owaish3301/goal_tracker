@@ -31,16 +31,16 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
   int _durationMinutes = AppConstants.defaultDurationMinutes;
   GoalCategory _selectedCategory = GoalCategory.other;
   List<Milestone> _milestones = [];
-  
+
   // Auto-assigned based on category and existing goals
   Color _assignedColor = AppConstants.defaultGoalColor;
   String _assignedIconName = AppConstants.defaultIconName;
-  
+
   // For edit mode - preserve original values
 
   bool _isLoading = true;
   bool _isSaving = false;
-  
+
   // Cache existing goals data for auto-assignment
   List<String> _usedIcons = [];
   List<Color> _usedColors = [];
@@ -55,11 +55,11 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
     // First load existing goals to know what icons/colors are used
     final repository = ref.read(goalRepositoryProvider);
     final allGoals = await repository.getAllGoals();
-    
+
     _usedIcons = allGoals.map((g) => g.iconName).toList();
-    _usedColors = allGoals.map((g) => 
-      Color(int.parse(g.colorHex.replaceFirst('#', '0xFF')))
-    ).toList();
+    _usedColors = allGoals
+        .map((g) => Color(int.parse(g.colorHex.replaceFirst('#', '0xFF'))))
+        .toList();
 
     if (widget.goalId != null) {
       // Edit mode - load existing goal
@@ -68,9 +68,11 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
       if (goal != null && mounted) {
         // Remove this goal's icon/color from used lists for edit
         _usedIcons.remove(goal.iconName);
-        final goalColor = Color(int.parse(goal.colorHex.replaceFirst('#', '0xFF')));
+        final goalColor = Color(
+          int.parse(goal.colorHex.replaceFirst('#', '0xFF')),
+        );
         _usedColors.remove(goalColor);
-        
+
         setState(() {
           _titleController.text = goal.title;
           _selectedDays = List.from(goal.frequency);
@@ -100,7 +102,7 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
       });
     }
   }
-  
+
   void _autoAssignColorAndIcon() {
     _assignedIconName = AppConstants.getNextIconForCategory(
       _selectedCategory,
@@ -111,7 +113,7 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
       _usedColors,
     );
   }
-  
+
   void _onCategoryChanged(GoalCategory category) {
     setState(() {
       _selectedCategory = category;
@@ -130,9 +132,14 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
   }
 
   Future<void> _saveGoal() async {
-    if (!_formKey.currentState!.validate()) return;
+    debugPrint('_saveGoal: Starting save...');
+    if (!_formKey.currentState!.validate()) {
+      debugPrint('_saveGoal: Form validation failed');
+      return;
+    }
 
     if (_selectedDays.isEmpty) {
+      debugPrint('_saveGoal: No days selected');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select at least one day'),
@@ -145,6 +152,7 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
     setState(() => _isSaving = true);
 
     try {
+      debugPrint('_saveGoal: Getting providers...');
       final goalNotifier = ref.read(goalNotifierProvider.notifier);
       final goalRepo = ref.read(goalRepositoryProvider);
       final milestoneRepo = ref.read(milestoneRepositoryProvider);
@@ -153,6 +161,12 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
           '#${_assignedColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
 
       if (widget.goalId == null) {
+        debugPrint('_saveGoal: Creating NEW goal...');
+        debugPrint('_saveGoal: Title: ${_titleController.text.trim()}');
+        debugPrint('_saveGoal: Frequency: $_selectedDays');
+        debugPrint('_saveGoal: Duration: $_durationMinutes');
+        debugPrint('_saveGoal: Category: $_selectedCategory');
+
         final goal = Goal()
           ..title = _titleController.text.trim()
           ..frequency = _selectedDays
@@ -164,14 +178,21 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
           ..createdAt = DateTime.now()
           ..isActive = true;
 
-        await goalNotifier.createGoal(goal);
-        final goals = await goalRepo.getAllGoals();
-        final createdGoal = goals.last;
+        debugPrint('_saveGoal: Calling goalNotifier.createGoal...');
+        final createdGoalId = await goalNotifier.createGoal(goal);
+        debugPrint('_saveGoal: createGoal returned: $createdGoalId');
 
-        for (final milestone in _milestones) {
-          await milestoneRepo.createMilestone(milestone, createdGoal.id);
+        if (createdGoalId != null && _milestones.isNotEmpty) {
+          debugPrint('_saveGoal: Creating ${_milestones.length} milestones...');
+          for (final milestone in _milestones) {
+            await milestoneRepo.createMilestone(milestone, createdGoalId);
+          }
+          debugPrint('_saveGoal: Milestones created');
         }
+
+        debugPrint('_saveGoal: Goal creation complete!');
       } else {
+        debugPrint('_saveGoal: UPDATING existing goal ${widget.goalId}...');
         final goal = await goalRepo.getGoal(widget.goalId!);
         if (goal != null) {
           goal
@@ -196,8 +217,11 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
         }
       }
 
+      debugPrint('_saveGoal: About to pop navigation...');
       if (mounted) context.pop();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('_saveGoal: ERROR - $e');
+      debugPrint('_saveGoal: StackTrace - $stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -262,8 +286,8 @@ class _AddEditGoalPageState extends ConsumerState<AddEditGoalPage> {
                   // Goal preview card showing auto-assigned color/icon
                   RepaintBoundary(
                     child: _GoalPreviewCard(
-                      title: _titleController.text.isEmpty 
-                          ? 'Your Goal' 
+                      title: _titleController.text.isEmpty
+                          ? 'Your Goal'
                           : _titleController.text,
                       color: _assignedColor,
                       iconName: _assignedIconName,
@@ -351,15 +375,13 @@ class _GoalPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = AppConstants.getIconFromName(iconName);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border(
-          left: BorderSide(color: color, width: 4),
-        ),
+        border: Border(left: BorderSide(color: color, width: 4)),
       ),
       child: Row(
         children: [

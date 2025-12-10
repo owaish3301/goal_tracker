@@ -556,4 +556,17 @@ class BackupRestoreService {
       );
     }
   }
+
+  /// Reset only user profile (for redo onboarding)
+  /// Keeps goals, tasks, and other data intact
+  Future<void> resetUserProfile() async {
+    try {
+      await isar.writeTxn(() async {
+        await isar.userProfiles.clear();
+      });
+      debugPrint('BackupRestoreService: User profile reset for re-onboarding');
+    } catch (e) {
+      debugPrint('BackupRestoreService: Failed to reset profile: $e');
+    }
+  }
 }

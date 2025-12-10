@@ -6,6 +6,7 @@ import '../widgets/analytics_overview_card.dart';
 import '../widgets/streak_insights_card.dart';
 import '../widgets/productivity_heatmap.dart';
 import '../widgets/goal_progress_list.dart';
+import '../widgets/sleep_schedule_card.dart';
 
 /// Analytics page showing user productivity insights
 class AnalyticsPage extends ConsumerWidget {
@@ -75,6 +76,17 @@ class AnalyticsPage extends ConsumerWidget {
                 children: [
                   // Overview Card
                   AnalyticsOverviewCard(data: data),
+                  const SizedBox(height: 16),
+
+                  // Sleep Schedule Card
+                  ref
+                      .watch(timeWindowProvider)
+                      .when(
+                        data: (timeWindow) =>
+                            SleepScheduleCard(timeWindow: timeWindow),
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      ),
                   const SizedBox(height: 16),
 
                   // Streak Insights
