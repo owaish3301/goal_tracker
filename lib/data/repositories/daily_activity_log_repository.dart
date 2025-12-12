@@ -112,11 +112,16 @@ class DailyActivityLogRepository {
 
     if (weekdayLogs.isEmpty) return (null, 0);
 
-    final totalHours = weekdayLogs.fold<int>(
-      0,
-      (sum, log) => sum + log.lastActivityAt!.hour,
-    );
-    return ((totalHours / weekdayLogs.length).round(), weekdayLogs.length);
+    // Normalize past-midnight hours (0-5) to 24-29 before averaging
+    // This prevents treating 23 (11 PM) and 1 (1 AM) as averaging to 12 (noon)
+    final totalHours = weekdayLogs.fold<int>(0, (sum, log) {
+      final hour = log.lastActivityAt!.hour;
+      // Treat hours 0-5 as next-day (24-29) for sleep time calculation
+      final normalizedHour = hour >= 0 && hour <= 5 ? hour + 24 : hour;
+      return sum + normalizedHour;
+    });
+    final avgHour = (totalHours / weekdayLogs.length).round() % 24;
+    return (avgHour, weekdayLogs.length);
   }
 
   /// Calculate average sleep hour for weekends
@@ -130,11 +135,16 @@ class DailyActivityLogRepository {
 
     if (weekendLogs.isEmpty) return (null, 0);
 
-    final totalHours = weekendLogs.fold<int>(
-      0,
-      (sum, log) => sum + log.lastActivityAt!.hour,
-    );
-    return ((totalHours / weekendLogs.length).round(), weekendLogs.length);
+    // Normalize past-midnight hours (0-5) to 24-29 before averaging
+    // This prevents treating 23 (11 PM) and 1 (1 AM) as averaging to 12 (noon)
+    final totalHours = weekendLogs.fold<int>(0, (sum, log) {
+      final hour = log.lastActivityAt!.hour;
+      // Treat hours 0-5 as next-day (24-29) for sleep time calculation
+      final normalizedHour = hour >= 0 && hour <= 5 ? hour + 24 : hour;
+      return sum + normalizedHour;
+    });
+    final avgHour = (totalHours / weekendLogs.length).round() % 24;
+    return (avgHour, weekendLogs.length);
   }
 
   /// Get learned activity patterns
