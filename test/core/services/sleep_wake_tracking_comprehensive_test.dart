@@ -521,8 +521,10 @@ Future<void> seedActivityLogsForWeeks(
         ? (weekendWakeHour + variation).clamp(5, 12)
         : (weekdayWakeHour + variation).clamp(5, 10);
     final sleepHour = isWeekend 
-        ? (weekendSleepHour + variation).clamp(0, 5)
-        : (weekdaySleepHour + variation).clamp(21, 24);
+        ? (weekendSleepHour + variation)
+            .clamp(weekendSleepHour - 2, weekendSleepHour + 2)
+        : (weekdaySleepHour + variation)
+            .clamp(weekdaySleepHour - 2, weekdaySleepHour + 2);
     
     // Handle sleep times that cross midnight: move lastActivityAt to the next day
     DateTime lastActivityDate = date;
