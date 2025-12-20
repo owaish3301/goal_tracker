@@ -284,7 +284,7 @@ class _SleepScheduleScreenState extends State<SleepScheduleScreen>
   }) {
     // Check if this is the sleep time and it's past midnight
     final bool isSleep = label == 'Sleep';
-    final bool isPastMidnight = isSleep && _sleepHour <= _wakeUpHour && _sleepHour < 6;
+    final bool isPastMidnight = isSleep && _sleepHour <= _wakeUpHour;
     
     return Container(
       padding: const EdgeInsets.all(16),
