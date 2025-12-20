@@ -36,7 +36,13 @@ class ActivityTrackingNavigationObserver extends NavigatorObserver {
 
   void _recordNavigationActivity() {
     // Record activity when user navigates
-    ref.read(appLifecycleObserverProvider).recordUserInteraction();
+    try {
+      ref.read(appLifecycleObserverProvider).recordUserInteraction();
+    } catch (error, stackTrace) {
+      // Ensure navigation is not broken if activity tracking fails
+      debugPrint('Failed to record navigation activity: $error');
+      debugPrint('$stackTrace');
+    }
   }
 }
 
