@@ -524,9 +524,21 @@ Future<void> seedActivityLogsForWeeks(
         ? (weekendSleepHour + variation).clamp(0, 5)
         : (weekdaySleepHour + variation).clamp(21, 24);
     
+    // Handle sleep times that cross midnight: move lastActivityAt to the next day
+    DateTime lastActivityDate = date;
+    if (sleepHour <= wakeHour || sleepHour < 6) {
+      lastActivityDate = date.add(const Duration(days: 1));
+    }
+    
     final log = DailyActivityLog.createForDate(date)
       ..firstActivityAt = DateTime(date.year, date.month, date.day, wakeHour, 0)
-      ..lastActivityAt = DateTime(date.year, date.month, date.day, sleepHour, 0)
+      ..lastActivityAt = DateTime(
+        lastActivityDate.year,
+        lastActivityDate.month,
+        lastActivityDate.day,
+        sleepHour,
+        0,
+      )
       ..tasksScheduled = 3 + (i % 3)
       ..tasksCompleted = 2 + (i % 2)
       ..productivitySum = 8.0 + (i % 5).toDouble()
