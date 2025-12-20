@@ -35,6 +35,11 @@ class _SleepScheduleScreenState extends State<SleepScheduleScreen>
 
   /// Check if the selected time window is valid (4-20 hours)
   bool get _isValidTimeWindow {
+    // If wake-up and sleep times are the same, the awake window is 0 hours (invalid).
+    if (_sleepHour == _wakeUpHour) {
+      return false;
+    }
+
     int awakeHours;
     if (_sleepHour > _wakeUpHour) {
       awakeHours = _sleepHour - _wakeUpHour;
