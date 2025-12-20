@@ -43,6 +43,12 @@ class AppLifecycleObserver extends WidgetsBindingObserver {
   Future<void> recordInitialActivity() async {
     await _recordActivity();
   }
+
+  /// Record user interaction (call from UI for key interactions)
+  /// This helps track actual app usage beyond just app resume events
+  Future<void> recordUserInteraction() async {
+    await _recordActivity();
+  }
 }
 
 /// Provider for app lifecycle observer

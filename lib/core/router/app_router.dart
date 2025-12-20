@@ -11,13 +11,41 @@ import '../../features/shell/presentation/pages/main_shell.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
 import '../../features/analytics/presentation/pages/analytics_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../observers/app_lifecycle_observer.dart';
 
 // Navigation keys for each branch
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Navigation observer that records user activity on route changes
+class ActivityTrackingNavigationObserver extends NavigatorObserver {
+  final Ref ref;
+
+  ActivityTrackingNavigationObserver(this.ref);
+
+  @override
+  void didPush(Route route, Route? previousRoute) {
+    super.didPush(route, previousRoute);
+    _recordNavigationActivity();
+  }
+
+  @override
+  void didPop(Route route, Route? previousRoute) {
+    super.didPop(route, previousRoute);
+    _recordNavigationActivity();
+  }
+
+  void _recordNavigationActivity() {
+    // Record activity when user navigates
+    ref.read(appLifecycleObserverProvider).recordUserInteraction();
+  }
+}
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
+    observers: [
+      ActivityTrackingNavigationObserver(ref),
+    ],
     initialLocation: '/',
     redirect: (context, state) async {
       // Check if going to onboarding
