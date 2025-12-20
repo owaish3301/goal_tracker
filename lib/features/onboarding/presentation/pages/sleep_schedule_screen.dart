@@ -33,6 +33,17 @@ class _SleepScheduleScreenState extends State<SleepScheduleScreen>
   late int _wakeUpHour;
   late int _sleepHour;
 
+  /// Check if the selected time window is valid (4-20 hours)
+  bool get _isValidTimeWindow {
+    int awakeHours;
+    if (_sleepHour > _wakeUpHour) {
+      awakeHours = _sleepHour - _wakeUpHour;
+    } else {
+      awakeHours = (24 - _wakeUpHour) + _sleepHour;
+    }
+    return awakeHours >= 4 && awakeHours <= 20;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -177,7 +188,7 @@ class _SleepScheduleScreenState extends State<SleepScheduleScreen>
                   child: OnboardingButton(
                     label: 'Continue',
                     icon: Icons.arrow_forward_rounded,
-                    onPressed: widget.onNext,
+                    onPressed: _isValidTimeWindow ? widget.onNext : null,
                   ),
                 ),
               ],
@@ -271,6 +282,10 @@ class _SleepScheduleScreenState extends State<SleepScheduleScreen>
     required int hour,
     required ValueChanged<int> onChanged,
   }) {
+    // Check if this is the sleep time and it's past midnight
+    final bool isSleep = label == 'Sleep';
+    final bool isPastMidnight = isSleep && _sleepHour <= _wakeUpHour && _sleepHour < 6;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -292,13 +307,28 @@ class _SleepScheduleScreenState extends State<SleepScheduleScreen>
           const SizedBox(width: 16),
           // Label
           Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (isPastMidnight) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '(next day)',
+                    style: TextStyle(
+                      color: AppColors.textSecondary.withValues(alpha: 0.6),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           // Time selector
@@ -340,32 +370,67 @@ class _SleepScheduleScreenState extends State<SleepScheduleScreen>
       awakeHours = (24 - _wakeUpHour) + _sleepHour;
     }
 
+    // Validate time window (must be 4-20 hours)
+    final bool isValid = awakeHours >= 4 && awakeHours <= 20;
+    final Color containerColor = isValid
+        ? AppColors.primary.withValues(alpha: 0.1)
+        : Colors.red.withValues(alpha: 0.1);
+    final Color borderColor = isValid
+        ? AppColors.primary.withValues(alpha: 0.2)
+        : Colors.red.withValues(alpha: 0.3);
+    final Color iconColor = isValid
+        ? AppColors.primary.withValues(alpha: 0.8)
+        : Colors.red.withValues(alpha: 0.8);
+    final Color textColor = isValid
+        ? AppColors.textSecondary.withValues(alpha: 0.9)
+        : Colors.red.withValues(alpha: 0.9);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
+        color: containerColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
+          color: borderColor,
           width: 1,
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
         children: [
-          Icon(
-            Icons.schedule_rounded,
-            color: AppColors.primary.withValues(alpha: 0.8),
-            size: 20,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isValid ? Icons.check_circle_rounded : Icons.error_rounded,
+                color: iconColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isValid
+                    ? '$awakeHours hours available for scheduling'
+                    : 'Invalid: Need 4-20 hours',
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 14,
+                  fontWeight: isValid ? FontWeight.normal : FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(
-            '$awakeHours hours available for scheduling',
-            style: TextStyle(
-              color: AppColors.textSecondary.withValues(alpha: 0.9),
-              fontSize: 14,
+          if (!isValid) ...[
+            const SizedBox(height: 8),
+            Text(
+              awakeHours < 4
+                  ? 'Please select at least 4 hours between wake and sleep times'
+                  : 'Please select no more than 20 hours between wake and sleep times',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.red.withValues(alpha: 0.8),
+                fontSize: 12,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
