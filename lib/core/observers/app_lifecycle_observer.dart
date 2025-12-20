@@ -18,13 +18,25 @@ class AppLifecycleObserver extends WidgetsBindingObserver {
   }
 
   /// Record user activity (app open/resume)
+  /// Uses 5-minute debounce for lifecycle events
   Future<void> _recordActivity() async {
+    await _recordActivityWithDebounce(debounceMinutes: 5);
+  }
+
+  /// Record user interaction (call from UI for key interactions)
+  /// Uses 2-minute debounce for navigation events to capture more frequent activity
+  Future<void> recordUserInteraction() async {
+    await _recordActivityWithDebounce(debounceMinutes: 2);
+  }
+
+  /// Internal method to record activity with configurable debounce
+  Future<void> _recordActivityWithDebounce({required int debounceMinutes}) async {
     final now = DateTime.now();
 
-    // Debounce: only record if no activity recorded in last 5 minutes
+    // Debounce: only record if no activity recorded in last N minutes
     if (_lastRecordedActivity != null) {
       final diff = now.difference(_lastRecordedActivity!);
-      if (diff.inMinutes < 5) {
+      if (diff.inMinutes < debounceMinutes) {
         return;
       }
     }
@@ -41,12 +53,6 @@ class AppLifecycleObserver extends WidgetsBindingObserver {
 
   /// Call this when app first launches (before lifecycle events)
   Future<void> recordInitialActivity() async {
-    await _recordActivity();
-  }
-
-  /// Record user interaction (call from UI for key interactions)
-  /// This helps track actual app usage beyond just app resume events
-  Future<void> recordUserInteraction() async {
     await _recordActivity();
   }
 }
