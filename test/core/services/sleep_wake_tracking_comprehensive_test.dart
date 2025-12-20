@@ -110,7 +110,7 @@ void main() {
       expect(window.isActiveHour(7), true); // Wake hour
       expect(window.isActiveHour(23), true); // Late evening
       expect(window.isActiveHour(0), true); // Midnight
-      expect(window.isActiveHour(1), false); // Sleep hour (exclusive)
+      expect(window.isActiveHour(1), false); // Sleep hour itself should be inactive (exclusive end of active window)
       expect(window.isActiveHour(2), false); // Past sleep
       expect(window.isActiveHour(6), false); // Before wake
     });
