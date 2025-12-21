@@ -1,19 +1,49 @@
-# Goal Tracker - Intelligent Offline Scheduler
+# Ascend - Intelligent Goal & Habit Tracker
 
-An offline-first, privacy-centric productivity app that uses on-device Machine Learning to automatically generate daily schedules based on user goals. Unlike standard to-do lists, this app **learns** from the user's completion habits and productivity ratings to optimize *when* tasks are scheduled, without ever sending data to the cloud.
+An offline-first, privacy-centric productivity app that uses on-device Machine Learning to automatically generate daily schedules based on user goals. Unlike standard to-do lists, this app **learns** from your completion habits and productivity ratings to optimize *when* tasks are scheduled.
 
-**Core Philosophy:** Privacy + Adaptation. The app adapts to the user, not the other way around.
+**Core Philosophy:** Privacy + Adaptation. The app adapts to you, not the other way around.
 
-## 📱 Platform
-- **Primary Target:** Android (Flutter)
-- **Architecture:** Offline-first, privacy-focused
-- **ML:** On-device pattern-based learning (pluggable for TensorFlow Lite)
+## 📱 Download
 
-## 📚 Documentation
+[![GitHub Release](https://img.shields.io/github/v/release/owaish3301/goal_tracker?style=for-the-badge)](https://github.com/owaish3301/goal_tracker/releases/latest)
 
-- **[PRD.md](PRD.md)** - Complete Product Requirements Document with feature specifications
-- **[DEVELOPMENT_PHASES.md](DEVELOPMENT_PHASES.md)** - Phased development roadmap (10 phases, ~7-8 weeks)
-- **[DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)** - Detailed database schema with Isar collections
+Download the latest APK from [GitHub Releases](https://github.com/owaish3301/goal_tracker/releases/latest):
+- **arm64-v8a** - Most modern Android phones (~28MB)
+- **armeabi-v7a** - Older Android phones (~26MB)
+- **Universal** - Works on all devices (~65MB)
+
+**In-App Updates:** The app automatically checks for updates and notifies you when a new version is available!
+
+## ✨ Features
+
+### 🎯 Goal Management
+- Create macro goals with milestones and priorities
+- Track progress with visual indicators
+- Drag-and-drop reordering for priority management
+- Streak tracking to maintain momentum
+
+### 📅 Smart Scheduling
+- ML-powered task scheduling based on your productivity patterns
+- Learns when you're most productive for each type of goal
+- Dynamic time windows that adapt to your sleep/wake patterns
+- Automatic schedule regeneration at midnight
+
+### 📊 Analytics Dashboard
+- Productivity trends and insights
+- Goal completion statistics
+- Streak tracking and best streaks
+- Performance analytics
+
+### 🗓️ Calendar View
+- Monthly and weekly views
+- See scheduled tasks at a glance
+- One-time task management
+
+### 🔒 Privacy-First
+- All data stays on your device
+- No cloud sync, no data collection
+- Full offline functionality
 
 ## 🚀 Quick Start
 
@@ -24,6 +54,9 @@ flutter pub get
 # Run the app
 flutter run
 
+# Build release APK
+flutter build apk --release --split-per-abi
+
 # Run all tests
 flutter test
 ```
@@ -31,97 +64,105 @@ flutter test
 ## 🧪 Test Coverage
 
 ```bash
-# Run all tests (215 tests)
+# Run all tests (391 tests)
 flutter test --reporter compact
 ```
 
 | Test Suite | Tests |
 |------------|-------|
-| Core Services (HybridScheduler, ProductivityDataCollector, PatternBasedML) | 35 |
-| Widget Tests (TaskCompletionModal, ScheduledTaskCard, UnifiedTimelineCard) | 58 |
-| Provider Tests (scheduledTaskProviders, timelineProviders) | 25 |
-| Repository Tests (Goal, Task, Milestone, OneTimeTask, UserProfile, etc.) | 52 |
-| Model Tests (GoalCategory) | 27 |
-| Onboarding Tests | 18 |
-| **Total** | **215** |
+| Core Services (Scheduler, ML, Productivity) | 85+ |
+| Widget Tests | 60+ |
+| Provider Tests | 30+ |
+| Repository Tests | 55+ |
+| Integration Tests | 40+ |
+| Sleep/Wake Tracking | 30+ |
+| **Total** | **391** |
 
 ## 🏗️ Project Structure
 
 ```
 lib/
-├── core/           # Core utilities, constants, themes
-├── data/           # Data layer (models, repositories, database)
-├── features/       # Feature modules (goals, scheduler, timeline, onboarding)
-├── shared/         # Shared widgets and utilities
-└── main.dart       # App entry point
+├── core/           # Core services, theme, router, widgets
+│   ├── services/   # App update, database, background scheduling
+│   ├── theme/      # Dark theme with neon accents
+│   ├── router/     # GoRouter navigation
+│   └── widgets/    # Shared widgets (update dialog, etc.)
+├── data/           # Data layer
+│   ├── models/     # Isar models (Goal, Task, UserProfile, etc.)
+│   └── repositories/
+├── features/       # Feature modules
+│   ├── goals/      # Goal management UI
+│   ├── timeline/   # Daily timeline view
+│   ├── calendar/   # Calendar view
+│   ├── analytics/  # Analytics dashboard
+│   ├── settings/   # App settings
+│   └── onboarding/ # First-time setup
+└── main.dart
 ```
 
-## 🎯 Current Phase
+## 🔑 Key Features Breakdown
 
-**Phase 6: Onboarding Flow** ✅ COMPLETE
-
-- ✅ Phase 0: Project Setup & Foundation
-- ✅ Phase 1: Core Data Layer  
-- ✅ Phase 2: Goal Management UI
-- ✅ Phase 3: One-Time Tasks
-- ✅ Phase 4: ML-Powered Scheduler (138 tests)
-- ✅ Phase 5: User Profile & Goal Categories (59 tests)
-- ✅ Phase 6: Onboarding Flow (18 tests)
-- ⏳ Phase 7: Habit Tracking Foundation (Next)
-
-See [DEVELOPMENT_PHASES.md](DEVELOPMENT_PHASES.md) for detailed roadmap.
-
-## 🔑 Key Features
-
-- **Smart Scheduling:** ML-powered task scheduling based on your productivity patterns
-- **Goal Management:** Create macro goals with milestones and priorities
-- **Adaptive Learning:** App learns when you're most productive for each goal
-- **Privacy-First:** All data stays on your device, no cloud sync
-- **Beautiful UI:** Dark mode with neon accents and smooth animations
-- **Background Scheduling:** Automatic schedule generation at midnight (Android)
-
-## 📋 TODO
-
-### iOS Background Scheduling
-The background schedule generation feature is currently Android-only. To implement for iOS:
-
-1. Add `BGTaskScheduler` configuration in `Info.plist`:
-   ```xml
-   <key>BGTaskSchedulerPermittedIdentifiers</key>
-   <array>
-     <string>com.goaltracker.midnightSchedule</string>
-   </array>
-   <key>UIBackgroundModes</key>
-   <array>
-     <string>fetch</string>
-     <string>processing</string>
-   </array>
-   ```
-
-2. Register background task in `AppDelegate.swift`:
-   ```swift
-   BGTaskScheduler.shared.register(
-     forTaskWithIdentifier: "com.goaltracker.midnightSchedule",
-     using: nil
-   ) { task in
-     // Handle background task
-   }
-   ```
-
-3. Update `BackgroundScheduleService` to handle iOS using `workmanager_apple`
-
-4. Request notification permissions for iOS in `_initializeNotifications()`
+| Feature | Status |
+|---------|--------|
+| Goal Management | ✅ Complete |
+| Milestone Tracking | ✅ Complete |
+| Smart Scheduling | ✅ Complete |
+| Pattern-Based ML | ✅ Complete |
+| Calendar View | ✅ Complete |
+| Analytics Dashboard | ✅ Complete |
+| Sleep/Wake Tracking | ✅ Complete |
+| Background Scheduling | ✅ Android |
+| Notifications | ✅ Complete |
+| Backup/Restore | ✅ Complete |
+| In-App Updates | ✅ Complete |
+| Dark Theme | ✅ Complete |
 
 ## 🛠️ Tech Stack
 
-- **Framework:** Flutter
+- **Framework:** Flutter 3.10+
 - **Database:** Isar (high-performance local storage)
-- **State Management:** Riverpod/Bloc
-- **ML:** Pattern-based on-device learning (pluggable for TensorFlow Lite)
+- **State Management:** Riverpod
 - **Navigation:** GoRouter
+- **ML:** Pattern-based on-device learning
+- **HTTP:** Dio (for update checking)
+- **Signing:** Release builds with custom keystore
+
+## 📋 Building from Source
+
+### Prerequisites
+- Flutter SDK 3.10+
+- Android Studio / VS Code
+- Java 17+ (for Android builds)
+
+### Release Build
+```bash
+# Build split APKs (recommended)
+flutter build apk --release --split-per-abi
+
+# Build universal APK
+flutter build apk --release
+```
+
+### Setting up Signing (for your own builds)
+1. Generate a keystore:
+   ```bash
+   keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+
+2. Create `android/key.properties`:
+   ```properties
+   storePassword=your_password
+   keyPassword=your_password
+   keyAlias=upload
+   storeFile=../upload-keystore.jks
+   ```
 
 ## 📖 Resources
 
 - [Flutter Documentation](https://docs.flutter.dev/)
 - [Isar Database](https://isar.dev/)
-- [TensorFlow Lite](https://www.tensorflow.org/lite)
+- [Riverpod](https://riverpod.dev/)
+
+## 📄 License
+
+This project is for personal use. All rights reserved.
