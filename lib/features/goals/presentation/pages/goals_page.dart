@@ -44,9 +44,10 @@ class GoalsPage extends ConsumerWidget {
         title: const Text('Goals'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(Icons.add_rounded),
+            tooltip: 'Add Goal',
             onPressed: () {
-              // TODO: Navigate to settings
+              context.push('/goals/add');
             },
           ),
         ],
@@ -78,8 +79,10 @@ class GoalsPage extends ConsumerWidget {
                 return AnimatedBuilder(
                   animation: animation,
                   builder: (context, child) {
-                    final double elevation = Tween<double>(begin: 0, end: 6)
-                        .evaluate(animation);
+                    final double elevation = Tween<double>(
+                      begin: 0,
+                      end: 6,
+                    ).evaluate(animation);
                     return Material(
                       elevation: elevation,
                       color: Colors.transparent,
@@ -93,8 +96,10 @@ class GoalsPage extends ConsumerWidget {
               },
               itemBuilder: (context, index) {
                 final goal = goals[index];
-                final streakAsync = ref.watch(goalStreakStatusProvider(goal.id));
-                
+                final streakAsync = ref.watch(
+                  goalStreakStatusProvider(goal.id),
+                );
+
                 return Padding(
                   key: ValueKey(goal.id),
                   padding: const EdgeInsets.only(bottom: 12),
@@ -157,12 +162,6 @@ class GoalsPage extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.push('/goals/add');
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }
