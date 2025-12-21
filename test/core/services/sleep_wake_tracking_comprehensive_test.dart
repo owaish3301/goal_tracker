@@ -46,84 +46,106 @@ void main() {
   });
 
   group('Data Seeding Utilities', () {
-    test('seedActivityLogsForWeeks creates realistic activity patterns', () async {
-      // Seed 2 weeks of data
-      await seedActivityLogsForWeeks(
-        activityRepo,
-        weeks: 2,
-        weekdayWakeHour: 7,
-        weekdaySleepHour: 23,
-        weekendWakeHour: 9,
-        weekendSleepHour: 1, // Past midnight
-      );
+    test(
+      'seedActivityLogsForWeeks creates realistic activity patterns',
+      () async {
+        // Seed 2 weeks of data
+        await seedActivityLogsForWeeks(
+          activityRepo,
+          weeks: 2,
+          weekdayWakeHour: 7,
+          weekdaySleepHour: 23,
+          weekendWakeHour: 9,
+          weekendSleepHour: 1, // Past midnight
+        );
 
-      final patterns = await activityRepo.getActivityPatterns();
-      
-      expect(patterns.weekdayWakeHour, 7);
-      expect(patterns.weekdaySleepHour, 23);
-      expect(patterns.weekendWakeHour, 9);
-      expect(patterns.weekendSleepHour, 1);
-      expect(patterns.hasAnyPattern, true);
-    });
+        final patterns = await activityRepo.getActivityPatterns();
 
-    test('seedProductivityData creates realistic productivity patterns', () async {
-      await seedProductivityData(
-        productivityRepo,
-        days: 14,
-        peakHours: [9, 10, 11], // Morning peak
-        averageScore: 4.0,
-      );
+        expect(patterns.weekdayWakeHour, 7);
+        expect(patterns.weekdaySleepHour, 23);
+        expect(patterns.weekendWakeHour, 9);
+        expect(patterns.weekendSleepHour, 1);
+        expect(patterns.hasAnyPattern, true);
+      },
+    );
 
-      final recentData = await productivityRepo.getRecentData(limit: 100);
-      expect(recentData.length, greaterThan(0));
-      
-      // Check that peak hours have higher scores
-      final peakData = recentData.where((d) => 
-        d.hourOfDay == 9 || d.hourOfDay == 10 || d.hourOfDay == 11
-      ).toList();
-      
-      if (peakData.isNotEmpty) {
-        final avgPeakScore = peakData.fold<double>(
-          0.0,
-          (sum, d) => sum + d.productivityScore,
-        ) / peakData.length;
-        expect(avgPeakScore, greaterThanOrEqualTo(3.5));
-      }
-    });
+    test(
+      'seedProductivityData creates realistic productivity patterns',
+      () async {
+        await seedProductivityData(
+          productivityRepo,
+          days: 14,
+          peakHours: [9, 10, 11], // Morning peak
+          averageScore: 4.0,
+        );
+
+        final recentData = await productivityRepo.getRecentData(limit: 100);
+        expect(recentData.length, greaterThan(0));
+
+        // Check that peak hours have higher scores
+        final peakData = recentData
+            .where(
+              (d) => d.hourOfDay == 9 || d.hourOfDay == 10 || d.hourOfDay == 11,
+            )
+            .toList();
+
+        if (peakData.isNotEmpty) {
+          final avgPeakScore =
+              peakData.fold<double>(
+                0.0,
+                (sum, d) => sum + d.productivityScore,
+              ) /
+              peakData.length;
+          expect(avgPeakScore, greaterThanOrEqualTo(3.5));
+        }
+      },
+    );
   });
 
   group('Edge Cases - Midnight Crossing', () {
-    test('handles sleep time past midnight correctly (wake=7, sleep=1)', () async {
-      final profile = UserProfile.createDefault()
-        ..wakeUpHour = 7
-        ..sleepHour = 1 // 1 AM next day
-        ..onboardingCompleted = true;
-      await profileRepo.saveProfile(profile);
+    test(
+      'handles sleep time past midnight correctly (wake=7, sleep=1)',
+      () async {
+        final profile = UserProfile.createDefault()
+          ..wakeUpHour = 7
+          ..sleepHour =
+              1 // 1 AM next day
+          ..onboardingCompleted = true;
+        await profileRepo.saveProfile(profile);
 
-      final window = await activityService.getActiveWindow(DateTime(2024, 1, 15));
-      
-      expect(window.wakeHour, 7);
-      expect(window.sleepHour, 1);
-      expect(window.durationHours, 18); // 7am to 1am next day = 18 hours
-      
-      // Test isActiveHour
-      expect(window.isActiveHour(7), true); // Wake hour
-      expect(window.isActiveHour(23), true); // Late evening
-      expect(window.isActiveHour(0), true); // Midnight
-      expect(window.isActiveHour(1), false); // Sleep hour itself should be inactive (exclusive end of active window)
-      expect(window.isActiveHour(2), false); // Past sleep
-      expect(window.isActiveHour(6), false); // Before wake
-    });
+        final window = await activityService.getActiveWindow(
+          DateTime(2024, 1, 15),
+        );
+
+        expect(window.wakeHour, 7);
+        expect(window.sleepHour, 1);
+        expect(window.durationHours, 18); // 7am to 1am next day = 18 hours
+
+        // Test isActiveHour
+        expect(window.isActiveHour(7), true); // Wake hour
+        expect(window.isActiveHour(23), true); // Late evening
+        expect(window.isActiveHour(0), true); // Midnight
+        expect(
+          window.isActiveHour(1),
+          false,
+        ); // Sleep hour itself should be inactive (exclusive end of active window)
+        expect(window.isActiveHour(2), false); // Past sleep
+        expect(window.isActiveHour(6), false); // Before wake
+      },
+    );
 
     test('handles very late sleep (wake=6, sleep=3)', () async {
       final profile = UserProfile.createDefault()
         ..wakeUpHour = 6
-        ..sleepHour = 3 // 3 AM
+        ..sleepHour =
+            3 // 3 AM
         ..onboardingCompleted = true;
       await profileRepo.saveProfile(profile);
 
-      final window = await activityService.getActiveWindow(DateTime(2024, 1, 15));
-      
+      final window = await activityService.getActiveWindow(
+        DateTime(2024, 1, 15),
+      );
+
       expect(window.durationHours, 21); // 6am to 3am next day = 21 hours
       expect(window.isActiveHour(2), true);
       expect(window.isActiveHour(3), false);
@@ -132,8 +154,10 @@ void main() {
 
     test('calculateRelativeTimeInDay handles midnight crossing', () async {
       final profile = UserProfile.createDefault()
-        ..wakeUpHour = 20 // 8 PM
-        ..sleepHour = 4 // 4 AM next day
+        ..wakeUpHour =
+            20 // 8 PM
+        ..sleepHour =
+            4 // 4 AM next day
         ..onboardingCompleted = true;
       await profileRepo.saveProfile(profile);
 
@@ -158,7 +182,8 @@ void main() {
     test('rejects invalid time window (less than 4 hours)', () async {
       final profile = UserProfile.createDefault()
         ..wakeUpHour = 22
-        ..sleepHour = 23 // Only 1 hour window - invalid
+        ..sleepHour =
+            23 // Only 1 hour window - invalid
         ..onboardingCompleted = true;
       await profileRepo.saveProfile(profile);
 
@@ -174,7 +199,8 @@ void main() {
     test('rejects invalid time window (more than 20 hours)', () async {
       final profile = UserProfile.createDefault()
         ..wakeUpHour = 6
-        ..sleepHour = 5 // 23 hour window - invalid
+        ..sleepHour =
+            5 // 23 hour window - invalid
         ..onboardingCompleted = true;
       await profileRepo.saveProfile(profile);
 
@@ -189,7 +215,8 @@ void main() {
     test('handles same wake and sleep hour', () async {
       final profile = UserProfile.createDefault()
         ..wakeUpHour = 7
-        ..sleepHour = 7 // Same hour - invalid
+        ..sleepHour =
+            7 // Same hour - invalid
         ..onboardingCompleted = true;
       await profileRepo.saveProfile(profile);
 
@@ -208,21 +235,35 @@ void main() {
       final normalizedNow = DateTime(now.year, now.month, now.day);
 
       // Create inconsistent weekday data (varying wake times)
+      // Use a Set to track dates we've already saved to avoid unique index violation
+      final processedDates = <DateTime>{};
       final wakeTimes = [6, 7, 8, 7, 6, 9, 7];
-      for (int i = 0; i < 7; i++) {
-        var date = normalizedNow.subtract(Duration(days: i + 1));
-        while (date.weekday >= 6) {
-          date = date.subtract(const Duration(days: 1));
-        }
-        
+      int wakeTimeIndex = 0;
+
+      for (int i = 1; i <= 14 && wakeTimeIndex < wakeTimes.length; i++) {
+        var date = normalizedNow.subtract(Duration(days: i));
+        // Skip weekends
+        if (date.weekday >= 6) continue;
+        // Skip if we already processed this date
+        final normalizedDate = DateTime(date.year, date.month, date.day);
+        if (processedDates.contains(normalizedDate)) continue;
+
+        processedDates.add(normalizedDate);
         final log = DailyActivityLog.createForDate(date)
-          ..firstActivityAt = DateTime(date.year, date.month, date.day, wakeTimes[i], 0)
+          ..firstActivityAt = DateTime(
+            date.year,
+            date.month,
+            date.day,
+            wakeTimes[wakeTimeIndex],
+            0,
+          )
           ..lastActivityAt = DateTime(date.year, date.month, date.day, 22, 0);
         await activityRepo.saveLog(log);
+        wakeTimeIndex++;
       }
 
       final patterns = await activityRepo.getActivityPatterns();
-      
+
       // Should average to around 7
       expect(patterns.weekdayWakeHour, isNotNull);
       expect(patterns.weekdayWakeHour!, greaterThanOrEqualTo(6));
@@ -240,12 +281,24 @@ void main() {
       }
 
       final log = DailyActivityLog.createForDate(saturday)
-        ..firstActivityAt = DateTime(saturday.year, saturday.month, saturday.day, 10, 0)
-        ..lastActivityAt = DateTime(saturday.year, saturday.month, saturday.day, 23, 0);
+        ..firstActivityAt = DateTime(
+          saturday.year,
+          saturday.month,
+          saturday.day,
+          10,
+          0,
+        )
+        ..lastActivityAt = DateTime(
+          saturday.year,
+          saturday.month,
+          saturday.day,
+          23,
+          0,
+        );
       await activityRepo.saveLog(log);
 
       final patterns = await activityRepo.getActivityPatterns();
-      
+
       // Should still have weekend pattern with limited data
       expect(patterns.weekendWakeHour, isNotNull);
       expect(patterns.weekendDataPoints, 1);
@@ -260,19 +313,26 @@ void main() {
       await profileRepo.saveProfile(profile);
 
       // Create learned pattern of 9am wake for weekdays
+      // Use a Set to track dates we've already saved to avoid unique index violation
       final now = DateTime.now();
       final normalizedNow = DateTime(now.year, now.month, now.day);
-      
-      for (int i = 0; i < 7; i++) {
-        var date = normalizedNow.subtract(Duration(days: i + 1));
-        while (date.weekday >= 6) {
-          date = date.subtract(const Duration(days: 1));
-        }
-        
+      final processedDates = <DateTime>{};
+      int logsCreated = 0;
+
+      for (int i = 1; i <= 14 && logsCreated < 7; i++) {
+        var date = normalizedNow.subtract(Duration(days: i));
+        // Skip weekends
+        if (date.weekday >= 6) continue;
+        // Skip if we already processed this date
+        final normalizedDate = DateTime(date.year, date.month, date.day);
+        if (processedDates.contains(normalizedDate)) continue;
+
+        processedDates.add(normalizedDate);
         final log = DailyActivityLog.createForDate(date)
           ..firstActivityAt = DateTime(date.year, date.month, date.day, 9, 0)
           ..lastActivityAt = DateTime(date.year, date.month, date.day, 22, 0);
         await activityRepo.saveLog(log);
+        logsCreated++;
       }
 
       // Check for a weekday
@@ -282,7 +342,7 @@ void main() {
       }
 
       final effectiveWake = await activityService.getEffectiveWakeHour(weekday);
-      
+
       // Should use learned pattern (9am) with some weighting towards profile (7am)
       expect(effectiveWake, greaterThanOrEqualTo(7));
       expect(effectiveWake, lessThanOrEqualTo(9));
@@ -305,7 +365,7 @@ void main() {
       expect(window.wakeHour, 6);
       expect(window.sleepHour, 22);
       expect(window.totalWindowHours, 16);
-      
+
       // Early bird should have optimal window in the morning
       expect(window.optimalStartHour, lessThanOrEqualTo(10));
     });
@@ -313,7 +373,8 @@ void main() {
     test('Scenario: Night Owl User (10am-2am)', () async {
       final profile = UserProfile.createDefault()
         ..wakeUpHour = 10
-        ..sleepHour = 2 // 2 AM
+        ..sleepHour =
+            2 // 2 AM
         ..chronoType = ChronoType.nightOwl
         ..onboardingCompleted = true;
       await profileRepo.saveProfile(profile);
@@ -336,19 +397,31 @@ void main() {
 
       for (int i = 0; i < 7; i++) {
         final date = normalizedNow.subtract(Duration(days: i));
-        
+
         // Alternate between day shift (7am) and night shift (7pm)
         final wakeHour = i % 2 == 0 ? 7 : 19;
         final sleepHour = i % 2 == 0 ? 23 : 11;
-        
+
         final log = DailyActivityLog.createForDate(date)
-          ..firstActivityAt = DateTime(date.year, date.month, date.day, wakeHour, 0)
-          ..lastActivityAt = DateTime(date.year, date.month, date.day, sleepHour, 0);
+          ..firstActivityAt = DateTime(
+            date.year,
+            date.month,
+            date.day,
+            wakeHour,
+            0,
+          )
+          ..lastActivityAt = DateTime(
+            date.year,
+            date.month,
+            date.day,
+            sleepHour,
+            0,
+          );
         await activityRepo.saveLog(log);
       }
 
       final patterns = await activityRepo.getActivityPatterns();
-      
+
       // Should have some pattern, even if averaged
       expect(patterns.hasAnyPattern, true);
       // The average will be somewhere in the middle
@@ -366,12 +439,12 @@ void main() {
       );
 
       final patterns = await activityRepo.getActivityPatterns();
-      
+
       expect(patterns.weekdayWakeHour, 9);
       expect(patterns.weekdaySleepHour, 2);
       expect(patterns.weekendWakeHour, 11);
       expect(patterns.weekendSleepHour, 3);
-      
+
       // Weekend should be different from weekday
       expect(patterns.weekendWakeHour! > patterns.weekdayWakeHour!, true);
     });
@@ -384,18 +457,24 @@ void main() {
       for (int i = 0; i < 14; i++) {
         final date = normalizedNow.subtract(Duration(days: i));
         if (date.weekday >= 6) continue; // Weekdays only
-        
+
         // Wake hour improves from 9am to 7am
         final wakeHour = 9 - (i ~/ 7); // 9am first week, 8am second week
-        
+
         final log = DailyActivityLog.createForDate(date)
-          ..firstActivityAt = DateTime(date.year, date.month, date.day, wakeHour, 0)
+          ..firstActivityAt = DateTime(
+            date.year,
+            date.month,
+            date.day,
+            wakeHour,
+            0,
+          )
           ..lastActivityAt = DateTime(date.year, date.month, date.day, 23, 0);
         await activityRepo.saveLog(log);
       }
 
       final patterns = await activityRepo.getActivityPatterns();
-      
+
       // Should average recent patterns (more weight on recent data)
       expect(patterns.weekdayWakeHour, isNotNull);
       expect(patterns.weekdayWakeHour!, greaterThanOrEqualTo(7));
@@ -412,6 +491,17 @@ void main() {
         ..chronoType = ChronoType.normal
         ..onboardingCompleted = true;
       await profileRepo.saveProfile(profile);
+
+      // IMPORTANT: isLearned depends on activity patterns, not just productivity data
+      // So we need to seed activity logs as well for isLearned to become true
+      await seedActivityLogsForWeeks(
+        activityRepo,
+        weeks: 2,
+        weekdayWakeHour: 7,
+        weekdaySleepHour: 22,
+        weekendWakeHour: 8,
+        weekendSleepHour: 23,
+      );
 
       // Seed productivity data showing morning peak (9-11 AM)
       await seedProductivityData(
@@ -439,7 +529,7 @@ void main() {
       for (int i = 14; i < 21; i++) {
         final date = normalizedNow.subtract(Duration(days: i));
         if (date.weekday >= 6) continue;
-        
+
         final log = DailyActivityLog.createForDate(date)
           ..firstActivityAt = DateTime(date.year, date.month, date.day, 8, 0)
           ..lastActivityAt = DateTime(date.year, date.month, date.day, 22, 0);
@@ -450,7 +540,7 @@ void main() {
       for (int i = 0; i < 14; i++) {
         final date = normalizedNow.subtract(Duration(days: i));
         if (date.weekday >= 6) continue;
-        
+
         final log = DailyActivityLog.createForDate(date)
           ..firstActivityAt = DateTime(date.year, date.month, date.day, 7, 0)
           ..lastActivityAt = DateTime(date.year, date.month, date.day, 22, 0);
@@ -459,7 +549,7 @@ void main() {
 
       // Should use more recent data (lookback is 14 days by default)
       final patterns = await activityRepo.getActivityPatterns(lookbackDays: 14);
-      
+
       expect(patterns.weekdayWakeHour, 7); // Should reflect new pattern
     });
   });
@@ -467,7 +557,7 @@ void main() {
   group('Performance and Data Volume', () {
     test('handles large volume of activity logs efficiently', () async {
       final stopwatch = Stopwatch()..start();
-      
+
       // Seed 90 days of data (realistic for a 3-month old account)
       await seedActivityLogsForWeeks(
         activityRepo,
@@ -477,19 +567,25 @@ void main() {
         weekendWakeHour: 9,
         weekendSleepHour: 1,
       );
-      
+
       stopwatch.stop();
-      
+
       // Seeding should be reasonably fast
-      expect(stopwatch.elapsedMilliseconds, lessThan(5000)); // Less than 5 seconds
-      
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(5000),
+      ); // Less than 5 seconds
+
       // Query patterns
       final queryStopwatch = Stopwatch()..start();
       final patterns = await activityRepo.getActivityPatterns();
       queryStopwatch.stop();
-      
+
       expect(patterns.hasAnyPattern, true);
-      expect(queryStopwatch.elapsedMilliseconds, lessThan(1000)); // Less than 1 second
+      expect(
+        queryStopwatch.elapsedMilliseconds,
+        lessThan(1000),
+      ); // Less than 1 second
     });
   });
 }
@@ -510,28 +606,32 @@ Future<void> seedActivityLogsForWeeks(
 }) async {
   final now = DateTime.now();
   final normalizedNow = DateTime(now.year, now.month, now.day);
-  
+
   for (int i = 0; i < weeks * 7; i++) {
     final date = normalizedNow.subtract(Duration(days: i));
     final isWeekend = date.weekday >= 6;
-    
+
     // Add some natural variation (±1 hour)
     final variation = (i % 3) - 1; // -1, 0, or 1
-    final wakeHour = isWeekend 
+    final wakeHour = isWeekend
         ? (weekendWakeHour + variation).clamp(5, 12)
         : (weekdayWakeHour + variation).clamp(5, 10);
-    final sleepHour = isWeekend 
-        ? (weekendSleepHour + variation)
-            .clamp(weekendSleepHour - 2, weekendSleepHour + 2)
-        : (weekdaySleepHour + variation)
-            .clamp(weekdaySleepHour - 2, weekdaySleepHour + 2);
-    
+    final sleepHour = isWeekend
+        ? (weekendSleepHour + variation).clamp(
+            weekendSleepHour - 2,
+            weekendSleepHour + 2,
+          )
+        : (weekdaySleepHour + variation).clamp(
+            weekdaySleepHour - 2,
+            weekdaySleepHour + 2,
+          );
+
     // Handle sleep times that cross midnight: move lastActivityAt to the next day
     DateTime lastActivityDate = date;
     if (sleepHour <= wakeHour || sleepHour < 6) {
       lastActivityDate = date.add(const Duration(days: 1));
     }
-    
+
     final log = DailyActivityLog.createForDate(date)
       ..firstActivityAt = DateTime(date.year, date.month, date.day, wakeHour, 0)
       ..lastActivityAt = DateTime(
@@ -545,7 +645,7 @@ Future<void> seedActivityLogsForWeeks(
       ..tasksCompleted = 2 + (i % 2)
       ..productivitySum = 8.0 + (i % 5).toDouble()
       ..averageProductivity = (8.0 + (i % 5).toDouble()) / (2 + (i % 2));
-    
+
     await repo.saveLog(log);
   }
 }
@@ -558,23 +658,23 @@ Future<void> seedProductivityData(
   required double averageScore,
 }) async {
   final now = DateTime.now();
-  
+
   for (int day = 0; day < days; day++) {
     final date = now.subtract(Duration(days: day));
-    
+
     // Create 3-5 productivity entries per day
     for (int entry = 0; entry < 3 + (day % 3); entry++) {
       // Randomly pick an hour, with bias towards peak hours
       final hour = (entry % 2 == 0 && peakHours.isNotEmpty)
           ? peakHours[entry % peakHours.length]
           : 8 + (entry * 3);
-      
+
       // Higher score during peak hours
       final isPeak = peakHours.contains(hour);
       final score = isPeak
           ? (averageScore + 0.5 + (entry % 10) / 10.0).clamp(1.0, 5.0)
           : (averageScore - 0.3 + (entry % 10) / 10.0).clamp(1.0, 5.0);
-      
+
       final data = ProductivityData()
         ..goalId = 1 + (entry % 3)
         ..hourOfDay = hour
@@ -603,7 +703,7 @@ Future<void> seedProductivityData(
         ..minutesFromScheduled = 0
         ..recordedAt = date
         ..scheduledTaskId = day * 10 + entry;
-      
+
       await repo.isar.writeTxn(() async {
         await repo.isar.productivityDatas.put(data);
       });
