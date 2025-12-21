@@ -23,13 +23,26 @@ class _MainShellState extends ConsumerState<MainShell> {
     super.initState();
     // Check for updates after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkForUpdates();
+      _initializeUpdateCheck();
     });
   }
 
+  Future<void> _initializeUpdateCheck() async {
+    // Only run on Android
+    if (!Platform.isAndroid) return;
+
+    final updateService = ref.read(appUpdateServiceProvider);
+
+    // Clean up any leftover APK files from previous updates
+    await updateService.cleanupOldDownloads();
+
+    // Then check for updates
+    await _checkForUpdates();
+  }
+
   Future<void> _checkForUpdates() async {
-    // Only check once per session and only on Android
-    if (_hasCheckedForUpdates || !Platform.isAndroid) return;
+    // Only check once per session
+    if (_hasCheckedForUpdates) return;
     _hasCheckedForUpdates = true;
 
     try {

@@ -102,13 +102,38 @@ class AppUpdateService {
   }
 
   /// Install the downloaded APK
+  /// Note: After calling this, the app will close for installation.
+  /// The APK cleanup happens on next app start via cleanupOldDownloads()
   Future<bool> installUpdate(String filePath) async {
     try {
       final result = await OpenFilex.open(filePath);
-      return result.type == ResultType.done;
+      if (result.type == ResultType.done) {
+        // Clear cache so we don't prompt again after update
+        clearCache();
+        return true;
+      }
+      return false;
     } catch (e) {
       debugPrint('Error installing update: $e');
       return false;
+    }
+  }
+
+  /// Clean up any previously downloaded APK files
+  /// Call this on app startup to remove leftover update files
+  Future<void> cleanupOldDownloads() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final files = tempDir.listSync();
+
+      for (final file in files) {
+        if (file is File && file.path.endsWith('.apk')) {
+          await file.delete();
+          debugPrint('Cleaned up old APK: ${file.path}');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error cleaning up old downloads: $e');
     }
   }
 
