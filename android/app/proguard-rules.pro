@@ -127,3 +127,15 @@
 -dontwarn kotlin.reflect.**
 -dontwarn org.codehaus.mojo.animal_sniffer.**
 
+# Dio HTTP client
+-keep class io.flutter.plugins.** { *; }
+-keep class com.example.goal_tracker.** { *; }
+
+# OpenFilex
+-keep class com.crazecoder.openfile.** { *; }
+
+# Permission handler
+-keep class com.baseflow.permissionhandler.** { *; }
+
+# Package info plus
+-keep class dev.fluttercommunity.plus.packageinfo.** { *; }

@@ -1,17 +1,54 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/update_dialog.dart';
 
 /// Main shell with bottom navigation bar
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const MainShell({super.key, required this.navigationShell});
 
   @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  bool _hasCheckedForUpdates = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check for updates after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdates();
+    });
+  }
+
+  Future<void> _checkForUpdates() async {
+    // Only check once per session and only on Android
+    if (_hasCheckedForUpdates || !Platform.isAndroid) return;
+    _hasCheckedForUpdates = true;
+
+    try {
+      final updateService = ref.read(appUpdateServiceProvider);
+      final updateInfo = await updateService.checkForUpdate();
+
+      if (updateInfo != null && mounted) {
+        await showUpdateDialog(context, updateInfo);
+      }
+    } catch (e) {
+      // Silently fail - don't interrupt user experience
+      debugPrint('Update check failed: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: navigationShell,
+      body: widget.navigationShell,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -32,26 +69,26 @@ class MainShell extends StatelessWidget {
                 _NavItem(
                   icon: Icons.today_rounded,
                   label: 'Today',
-                  isSelected: navigationShell.currentIndex == 0,
-                  onTap: () => navigationShell.goBranch(0),
+                  isSelected: widget.navigationShell.currentIndex == 0,
+                  onTap: () => widget.navigationShell.goBranch(0),
                 ),
                 _NavItem(
                   icon: Icons.calendar_month_rounded,
                   label: 'Calendar',
-                  isSelected: navigationShell.currentIndex == 1,
-                  onTap: () => navigationShell.goBranch(1),
+                  isSelected: widget.navigationShell.currentIndex == 1,
+                  onTap: () => widget.navigationShell.goBranch(1),
                 ),
                 _NavItem(
                   icon: Icons.insights_rounded,
                   label: 'Analytics',
-                  isSelected: navigationShell.currentIndex == 2,
-                  onTap: () => navigationShell.goBranch(2),
+                  isSelected: widget.navigationShell.currentIndex == 2,
+                  onTap: () => widget.navigationShell.goBranch(2),
                 ),
                 _NavItem(
                   icon: Icons.flag_rounded,
                   label: 'Goals',
-                  isSelected: navigationShell.currentIndex == 3,
-                  onTap: () => navigationShell.goBranch(3),
+                  isSelected: widget.navigationShell.currentIndex == 3,
+                  onTap: () => widget.navigationShell.goBranch(3),
                 ),
               ],
             ),
