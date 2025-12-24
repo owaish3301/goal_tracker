@@ -37,40 +37,60 @@ const DailyActivityLogSchema = CollectionSchema(
       name: r'firstActivityAt',
       type: IsarType.dateTime,
     ),
-    r'isWeekend': PropertySchema(
+    r'isScheduleLocked': PropertySchema(
       id: 4,
+      name: r'isScheduleLocked',
+      type: IsarType.bool,
+    ),
+    r'isWeekend': PropertySchema(
+      id: 5,
       name: r'isWeekend',
       type: IsarType.bool,
     ),
     r'lastActivityAt': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'lastActivityAt',
       type: IsarType.dateTime,
     ),
+    r'manualSleepHour': PropertySchema(
+      id: 7,
+      name: r'manualSleepHour',
+      type: IsarType.long,
+    ),
+    r'manualWakeHour': PropertySchema(
+      id: 8,
+      name: r'manualWakeHour',
+      type: IsarType.long,
+    ),
     r'productivitySum': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'productivitySum',
       type: IsarType.double,
     ),
     r'tasksCompleted': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'tasksCompleted',
       type: IsarType.long,
     ),
     r'tasksScheduled': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'tasksScheduled',
       type: IsarType.long,
     ),
     r'tasksSkipped': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'tasksSkipped',
       type: IsarType.long,
     ),
     r'updatedAt': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'wasAnomaly': PropertySchema(
+      id: 14,
+      name: r'wasAnomaly',
+      type: IsarType.bool,
     )
   },
   estimateSize: _dailyActivityLogEstimateSize,
@@ -120,13 +140,17 @@ void _dailyActivityLogSerialize(
   writer.writeDateTime(offsets[1], object.date);
   writer.writeLong(offsets[2], object.dayOfWeek);
   writer.writeDateTime(offsets[3], object.firstActivityAt);
-  writer.writeBool(offsets[4], object.isWeekend);
-  writer.writeDateTime(offsets[5], object.lastActivityAt);
-  writer.writeDouble(offsets[6], object.productivitySum);
-  writer.writeLong(offsets[7], object.tasksCompleted);
-  writer.writeLong(offsets[8], object.tasksScheduled);
-  writer.writeLong(offsets[9], object.tasksSkipped);
-  writer.writeDateTime(offsets[10], object.updatedAt);
+  writer.writeBool(offsets[4], object.isScheduleLocked);
+  writer.writeBool(offsets[5], object.isWeekend);
+  writer.writeDateTime(offsets[6], object.lastActivityAt);
+  writer.writeLong(offsets[7], object.manualSleepHour);
+  writer.writeLong(offsets[8], object.manualWakeHour);
+  writer.writeDouble(offsets[9], object.productivitySum);
+  writer.writeLong(offsets[10], object.tasksCompleted);
+  writer.writeLong(offsets[11], object.tasksScheduled);
+  writer.writeLong(offsets[12], object.tasksSkipped);
+  writer.writeDateTime(offsets[13], object.updatedAt);
+  writer.writeBool(offsets[14], object.wasAnomaly);
 }
 
 DailyActivityLog _dailyActivityLogDeserialize(
@@ -141,13 +165,17 @@ DailyActivityLog _dailyActivityLogDeserialize(
   object.dayOfWeek = reader.readLong(offsets[2]);
   object.firstActivityAt = reader.readDateTimeOrNull(offsets[3]);
   object.id = id;
-  object.isWeekend = reader.readBool(offsets[4]);
-  object.lastActivityAt = reader.readDateTimeOrNull(offsets[5]);
-  object.productivitySum = reader.readDouble(offsets[6]);
-  object.tasksCompleted = reader.readLong(offsets[7]);
-  object.tasksScheduled = reader.readLong(offsets[8]);
-  object.tasksSkipped = reader.readLong(offsets[9]);
-  object.updatedAt = reader.readDateTime(offsets[10]);
+  object.isScheduleLocked = reader.readBool(offsets[4]);
+  object.isWeekend = reader.readBool(offsets[5]);
+  object.lastActivityAt = reader.readDateTimeOrNull(offsets[6]);
+  object.manualSleepHour = reader.readLongOrNull(offsets[7]);
+  object.manualWakeHour = reader.readLongOrNull(offsets[8]);
+  object.productivitySum = reader.readDouble(offsets[9]);
+  object.tasksCompleted = reader.readLong(offsets[10]);
+  object.tasksScheduled = reader.readLong(offsets[11]);
+  object.tasksSkipped = reader.readLong(offsets[12]);
+  object.updatedAt = reader.readDateTime(offsets[13]);
+  object.wasAnomaly = reader.readBool(offsets[14]);
   return object;
 }
 
@@ -169,17 +197,25 @@ P _dailyActivityLogDeserializeProp<P>(
     case 4:
       return (reader.readBool(offset)) as P;
     case 5:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 8:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 9:
-      return (reader.readLong(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 10:
+      return (reader.readLong(offset)) as P;
+    case 11:
+      return (reader.readLong(offset)) as P;
+    case 12:
+      return (reader.readLong(offset)) as P;
+    case 13:
       return (reader.readDateTime(offset)) as P;
+    case 14:
+      return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -744,6 +780,16 @@ extension DailyActivityLogQueryFilter
   }
 
   QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      isScheduleLockedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isScheduleLocked',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
       isWeekendEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -819,6 +865,154 @@ extension DailyActivityLogQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'lastActivityAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualSleepHourIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'manualSleepHour',
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualSleepHourIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'manualSleepHour',
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualSleepHourEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'manualSleepHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualSleepHourGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'manualSleepHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualSleepHourLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'manualSleepHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualSleepHourBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'manualSleepHour',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualWakeHourIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'manualWakeHour',
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualWakeHourIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'manualWakeHour',
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualWakeHourEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'manualWakeHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualWakeHourGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'manualWakeHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualWakeHourLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'manualWakeHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      manualWakeHourBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'manualWakeHour',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1116,6 +1310,16 @@ extension DailyActivityLogQueryFilter
       ));
     });
   }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterFilterCondition>
+      wasAnomalyEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'wasAnomaly',
+        value: value,
+      ));
+    });
+  }
 }
 
 extension DailyActivityLogQueryObject
@@ -1182,6 +1386,20 @@ extension DailyActivityLogQuerySortBy
   }
 
   QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      sortByIsScheduleLocked() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isScheduleLocked', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      sortByIsScheduleLockedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isScheduleLocked', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
       sortByIsWeekend() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isWeekend', Sort.asc);
@@ -1206,6 +1424,34 @@ extension DailyActivityLogQuerySortBy
       sortByLastActivityAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastActivityAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      sortByManualSleepHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'manualSleepHour', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      sortByManualSleepHourDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'manualSleepHour', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      sortByManualWakeHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'manualWakeHour', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      sortByManualWakeHourDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'manualWakeHour', Sort.desc);
     });
   }
 
@@ -1276,6 +1522,20 @@ extension DailyActivityLogQuerySortBy
       sortByUpdatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      sortByWasAnomaly() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'wasAnomaly', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      sortByWasAnomalyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'wasAnomaly', Sort.desc);
     });
   }
 }
@@ -1351,6 +1611,20 @@ extension DailyActivityLogQuerySortThenBy
   }
 
   QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      thenByIsScheduleLocked() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isScheduleLocked', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      thenByIsScheduleLockedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isScheduleLocked', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
       thenByIsWeekend() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isWeekend', Sort.asc);
@@ -1375,6 +1649,34 @@ extension DailyActivityLogQuerySortThenBy
       thenByLastActivityAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastActivityAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      thenByManualSleepHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'manualSleepHour', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      thenByManualSleepHourDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'manualSleepHour', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      thenByManualWakeHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'manualWakeHour', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      thenByManualWakeHourDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'manualWakeHour', Sort.desc);
     });
   }
 
@@ -1447,6 +1749,20 @@ extension DailyActivityLogQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      thenByWasAnomaly() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'wasAnomaly', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QAfterSortBy>
+      thenByWasAnomalyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'wasAnomaly', Sort.desc);
+    });
+  }
 }
 
 extension DailyActivityLogQueryWhereDistinct
@@ -1479,6 +1795,13 @@ extension DailyActivityLogQueryWhereDistinct
   }
 
   QueryBuilder<DailyActivityLog, DailyActivityLog, QDistinct>
+      distinctByIsScheduleLocked() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isScheduleLocked');
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QDistinct>
       distinctByIsWeekend() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isWeekend');
@@ -1489,6 +1812,20 @@ extension DailyActivityLogQueryWhereDistinct
       distinctByLastActivityAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastActivityAt');
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QDistinct>
+      distinctByManualSleepHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'manualSleepHour');
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QDistinct>
+      distinctByManualWakeHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'manualWakeHour');
     });
   }
 
@@ -1524,6 +1861,13 @@ extension DailyActivityLogQueryWhereDistinct
       distinctByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, DailyActivityLog, QDistinct>
+      distinctByWasAnomaly() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'wasAnomaly');
     });
   }
 }
@@ -1562,6 +1906,13 @@ extension DailyActivityLogQueryProperty
     });
   }
 
+  QueryBuilder<DailyActivityLog, bool, QQueryOperations>
+      isScheduleLockedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isScheduleLocked');
+    });
+  }
+
   QueryBuilder<DailyActivityLog, bool, QQueryOperations> isWeekendProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isWeekend');
@@ -1572,6 +1923,20 @@ extension DailyActivityLogQueryProperty
       lastActivityAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastActivityAt');
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, int?, QQueryOperations>
+      manualSleepHourProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'manualSleepHour');
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, int?, QQueryOperations>
+      manualWakeHourProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'manualWakeHour');
     });
   }
 
@@ -1606,6 +1971,12 @@ extension DailyActivityLogQueryProperty
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<DailyActivityLog, bool, QQueryOperations> wasAnomalyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'wasAnomaly');
     });
   }
 }

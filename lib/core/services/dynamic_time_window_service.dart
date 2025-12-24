@@ -4,16 +4,18 @@ import '../../data/repositories/productivity_data_repository.dart';
 import '../../data/repositories/user_profile_repository.dart';
 import '../../data/models/user_profile.dart';
 import 'daily_activity_service.dart';
+import 'device_usage_service.dart';
 
 /// Service for calculating dynamic time windows based on user behavior
 /// Learns from successful completions and adapts over time
-/// Smart v2: Uses UserProfile as immediate baseline and learns daily
+/// Smart v3: Uses DeviceUsageService for high-fidelity wake/sleep detection
 class DynamicTimeWindowService {
   final DailyActivityLogRepository _activityRepo;
   final ProductivityDataRepository _productivityRepo;
   final UserProfileRepository _profileRepo;
   // ignore: unused_field - Reserved for future activity-based learning
   final DailyActivityService _activityService;
+  final DeviceUsageService? _deviceUsageService;
 
   /// Minimum productivity score to consider a task "successful"
   static const double successThreshold = 3.5;
@@ -22,93 +24,158 @@ class DynamicTimeWindowService {
   /// Increases as we get more data points
   static const double learningRate = 0.1;
 
+  /// Variance threshold (hours) to trigger anomaly flag
+  static const int anomalyThresholdHours = 2;
+
   DynamicTimeWindowService({
     required DailyActivityLogRepository activityRepo,
     required ProductivityDataRepository productivityRepo,
     required UserProfileRepository profileRepo,
     required DailyActivityService activityService,
+    DeviceUsageService? deviceUsageService,
   }) : _activityRepo = activityRepo,
        _productivityRepo = productivityRepo,
        _profileRepo = profileRepo,
-       _activityService = activityService;
+       _activityService = activityService,
+       _deviceUsageService = deviceUsageService;
 
   /// Get the effective time window for a date
-  /// Combines learned patterns with profile defaults
+  /// Priority: 1) Manual Override, 2) Device Usage Detection, 3) Learned Patterns, 4) Profile
   Future<DynamicTimeWindow> getTimeWindowForDate(DateTime date) async {
     final isWeekend = date.weekday >= 6;
+    const minWindowHours = 4;
+
+    // 0. CHECK FOR MANUAL OVERRIDE (Highest Priority)
+    final dailyLog = await _activityRepo.getForDate(date);
+    if (dailyLog != null &&
+        dailyLog.isScheduleLocked &&
+        dailyLog.manualWakeHour != null &&
+        dailyLog.manualSleepHour != null) {
+      debugPrint('Using MANUAL OVERRIDE for $date');
+      final successfulHours = await _getSuccessfulHours(isWeekend: isWeekend);
+      final profile = await _profileRepo.getProfile();
+      final (optimalStart, optimalEnd) = _calculateOptimalWindow(
+        successfulHours: successfulHours,
+        baseWake: dailyLog.manualWakeHour!,
+        baseSleep: dailyLog.manualSleepHour!,
+        profile: profile,
+      );
+      return DynamicTimeWindow(
+        date: date,
+        wakeHour: dailyLog.manualWakeHour!,
+        sleepHour: dailyLog.manualSleepHour!,
+        optimalStartHour: optimalStart,
+        optimalEndHour: optimalEnd,
+        isLearned: false,
+        isManualOverride: true,
+        isAnomaly: dailyLog.wasAnomaly,
+        successfulHours: successfulHours,
+      );
+    }
 
     // Get profile defaults (The "Day 1" Baseline)
     final profile = await _profileRepo.getProfile();
     var defaultWake = profile?.wakeUpHour ?? (isWeekend ? 8 : 7);
     var defaultSleep = profile?.sleepHour ?? 23;
 
-    // SAFETY CHECK: Ensure minimum window of 4 hours
-    // Handle both normal (wake < sleep) and past-midnight (wake > sleep) scenarios
-    const minWindowHours = 4;
-    final activeHours = _calculateActiveHours(defaultWake, defaultSleep);
-    if (activeHours < minWindowHours || activeHours > 20) {
+    // SAFETY CHECK for profile defaults
+    final profileActiveHours = _calculateActiveHours(defaultWake, defaultSleep);
+    if (profileActiveHours < minWindowHours || profileActiveHours > 20) {
       debugPrint(
-        'WARNING: User profile has invalid time window (wake=$defaultWake, sleep=$defaultSleep, hours=$activeHours). Using defaults.',
+        'WARNING: User profile has invalid time window (wake=$defaultWake, sleep=$defaultSleep). Using defaults.',
       );
       defaultWake = isWeekend ? 8 : 7;
       defaultSleep = 23;
     }
 
-    // Get learned patterns from activity
-    final patterns = await _activityRepo.getActivityPatterns();
-
-    // Calculate effective window using weighted average if patterns exist
     int effectiveWake = defaultWake;
     int effectiveSleep = defaultSleep;
     bool isLearned = false;
+    bool isAnomaly = false;
 
-    if (isWeekend) {
-      if (patterns.weekendWakeHour != null) {
-        effectiveWake = _calculateWeightedHour(
-          defaultWake,
-          patterns.weekendWakeHour!.toDouble(),
-          patterns.weekendDataPoints,
-        );
+    // 1. SMART DETECTION via Device Usage (if available)
+    final deviceUsageService = _deviceUsageService;
+    if (deviceUsageService != null &&
+        await deviceUsageService.checkPermission()) {
+      final detectedWake = await deviceUsageService.getWakeTime(date);
+      final detectedSleep = await deviceUsageService.getSleepTime(date);
+
+      if (detectedWake != null) {
+        effectiveWake = detectedWake.hour;
         isLearned = true;
+        // Check for anomaly
+        if ((effectiveWake - defaultWake).abs() > anomalyThresholdHours) {
+          isAnomaly = true;
+          debugPrint(
+            'ANOMALY: Detected wake=$effectiveWake, profile=$defaultWake',
+          );
+        }
       }
-      if (patterns.weekendSleepHour != null) {
-        effectiveSleep = _calculateWeightedHour(
-          defaultSleep,
-          patterns.weekendSleepHour!.toDouble(),
-          patterns.weekendDataPoints,
-        );
+      if (detectedSleep != null) {
+        effectiveSleep = detectedSleep.hour;
         isLearned = true;
-      }
-    } else {
-      if (patterns.weekdayWakeHour != null) {
-        effectiveWake = _calculateWeightedHour(
-          defaultWake,
-          patterns.weekdayWakeHour!.toDouble(),
-          patterns.weekdayDataPoints,
-        );
-        isLearned = true;
-      }
-      if (patterns.weekdaySleepHour != null) {
-        effectiveSleep = _calculateWeightedHour(
-          defaultSleep,
-          patterns.weekdaySleepHour!.toDouble(),
-          patterns.weekdaySleepHour!,
-        );
-        isLearned = true;
+        // Check for anomaly (simplified, no midnight handling here)
+        if ((effectiveSleep - defaultSleep).abs() > anomalyThresholdHours) {
+          isAnomaly = true;
+          debugPrint(
+            'ANOMALY: Detected sleep=$effectiveSleep, profile=$defaultSleep',
+          );
+        }
       }
     }
 
-    // FINAL SAFETY CHECK: Ensure effective window is valid after learning adjustments
+    // 2. FALLBACK: Learned patterns from app usage (if no device detection)
+    if (!isLearned) {
+      final patterns = await _activityRepo.getActivityPatterns();
+      if (isWeekend) {
+        if (patterns.weekendWakeHour != null) {
+          effectiveWake = _calculateWeightedHour(
+            defaultWake,
+            patterns.weekendWakeHour!.toDouble(),
+            patterns.weekendDataPoints,
+          );
+          isLearned = true;
+        }
+        if (patterns.weekendSleepHour != null) {
+          effectiveSleep = _calculateWeightedHour(
+            defaultSleep,
+            patterns.weekendSleepHour!.toDouble(),
+            patterns.weekendDataPoints,
+          );
+          isLearned = true;
+        }
+      } else {
+        if (patterns.weekdayWakeHour != null) {
+          effectiveWake = _calculateWeightedHour(
+            defaultWake,
+            patterns.weekdayWakeHour!.toDouble(),
+            patterns.weekdayDataPoints,
+          );
+          isLearned = true;
+        }
+        if (patterns.weekdaySleepHour != null) {
+          effectiveSleep = _calculateWeightedHour(
+            defaultSleep,
+            patterns.weekdaySleepHour!.toDouble(),
+            patterns.weekdaySleepHour!,
+          );
+          isLearned = true;
+        }
+      }
+    }
+
+    // FINAL SAFETY CHECK
     final effectiveActiveHours = _calculateActiveHours(
       effectiveWake,
       effectiveSleep,
     );
     if (effectiveActiveHours < minWindowHours || effectiveActiveHours > 20) {
       debugPrint(
-        'WARNING: Effective window invalid after learning (wake=$effectiveWake, sleep=$effectiveSleep, hours=$effectiveActiveHours). Using profile defaults.',
+        'WARNING: Effective window invalid (wake=$effectiveWake, sleep=$effectiveSleep). Using defaults.',
       );
       effectiveWake = defaultWake;
       effectiveSleep = defaultSleep;
+      isAnomaly = false;
     }
 
     // Get successful hours from productivity data for optimization
@@ -129,6 +196,8 @@ class DynamicTimeWindowService {
       optimalStartHour: optimalStart,
       optimalEndHour: optimalEnd,
       isLearned: isLearned,
+      isManualOverride: false,
+      isAnomaly: isAnomaly,
       successfulHours: successfulHours,
     );
   }
@@ -312,6 +381,12 @@ class DynamicTimeWindow {
   final int optimalStartHour;
   final int optimalEndHour;
   final bool isLearned;
+
+  /// True if user manually set wake/sleep times for this day
+  final bool isManualOverride;
+
+  /// True if detected times significantly differ from profile/history
+  final bool isAnomaly;
   final List<SuccessfulHour> successfulHours;
 
   DynamicTimeWindow({
@@ -321,6 +396,8 @@ class DynamicTimeWindow {
     required this.optimalStartHour,
     required this.optimalEndHour,
     required this.isLearned,
+    this.isManualOverride = false,
+    this.isAnomaly = false,
     required this.successfulHours,
   });
 

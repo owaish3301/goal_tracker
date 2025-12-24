@@ -42,6 +42,20 @@ class DailyActivityLog {
   /// When this log was last updated
   late DateTime updatedAt;
 
+  // === MANUAL OVERRIDES (Smart Sleep Logic) ===
+
+  /// Manually overridden wake hour (set by user)
+  int? manualWakeHour;
+
+  /// Manually overridden sleep hour (set by user)
+  int? manualSleepHour;
+
+  /// Whether the schedule for this day is locked (confirmed by user)
+  bool isScheduleLocked = false;
+
+  /// Whether detected times were flagged as anomalous
+  bool wasAnomaly = false;
+
   // === Computed Properties ===
 
   /// Effective wake hour based on first activity
@@ -79,7 +93,9 @@ class DailyActivityLog {
       ..tasksSkipped = 0
       ..averageProductivity = 0.0
       ..productivitySum = 0.0
-      ..isWeekend = dow >= 5 // Saturday or Sunday
+      ..isWeekend =
+          dow >=
+          5 // Saturday or Sunday
       ..dayOfWeek = dow
       ..updatedAt = DateTime.now();
   }

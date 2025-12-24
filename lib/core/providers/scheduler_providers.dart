@@ -6,6 +6,7 @@ import '../services/hybrid_scheduler.dart';
 import '../services/profile_based_scheduler.dart';
 import '../services/dynamic_time_window_service.dart';
 import '../services/habit_formation_service.dart';
+import '../services/device_usage_service.dart';
 import 'productivity_providers.dart';
 
 /// Provider for the rule-based scheduler
@@ -46,6 +47,11 @@ final profileBasedSchedulerProvider = Provider<ProfileBasedScheduler>((ref) {
   return ProfileBasedScheduler(profileRepo);
 });
 
+/// Provider for the device usage service (Android Usage Stats)
+final deviceUsageServiceProvider = Provider<DeviceUsageService>((ref) {
+  return DeviceUsageService();
+});
+
 /// Provider for the dynamic time window service
 final dynamicTimeWindowServiceProvider = Provider<DynamicTimeWindowService>((
   ref,
@@ -54,12 +60,14 @@ final dynamicTimeWindowServiceProvider = Provider<DynamicTimeWindowService>((
   final productivityRepo = ref.watch(productivityDataRepositoryProvider);
   final profileRepo = ref.watch(userProfileRepositoryProvider);
   final activityService = ref.watch(dailyActivityServiceProvider);
+  final deviceUsageService = ref.watch(deviceUsageServiceProvider);
 
   return DynamicTimeWindowService(
     activityRepo: activityRepo,
     productivityRepo: productivityRepo,
     profileRepo: profileRepo,
     activityService: activityService,
+    deviceUsageService: deviceUsageService,
   );
 });
 
